@@ -9,8 +9,11 @@ This builds on [Carneiro, Coquand, Frabetti Mathieu, Lennon-Bertrand, Melliès a
 
 [`Inversion.lean`](DomainSemantics/Inversion.lean)
 
-- `IsDefEq.forallE_inv`: `Γ ⊢ Π A B ≡ Π A' B' : T` gives `Γ ⊢ A ≡ A'`, `A :: Γ ⊢ B ≡ B'`, and `A' :: Γ ⊢ B ≡ B'`.
+- `IsDefEq.forallE_inv`: `Γ ⊢ Π A B ≡ Π A' B' : T` gives `Γ ⊢ A ≡ A'` and `Γ, A ⊢ B ≡ B'`, (resp. `Γ, A' ⊢ B ≡ B'`).
 - `IsDefEq.sort_inv`: `Γ ⊢ sort u ≡ sort v : T` gives `u = v`.
+
+[`Unique.lean`](DomainSemantics/Unique.lean)
+
 - `IsDefEq.type_unique`: `Γ ⊢ M : A` and `Γ ⊢ M : B` give `Γ ⊢ A ≡ B`.
 - `IsDefEq.sort_unique`: `Γ ⊢ M : sort u` and `Γ ⊢ M : sort v` give `u = v`.
 
