@@ -98,3 +98,4 @@ public import DomainSemantics.Syntax.Extrinsic
 public import DomainSemantics.Syntax.Intrinsic
 public import DomainSemantics.Syntax.Substitution
 public import DomainSemantics.Syntax.Typing
+public import DomainSemantics.Unique

@@ -11,6 +11,7 @@ public import DomainSemantics.Soundness.EliminationRules
 public import DomainSemantics.Soundness.Nat.RecRules
 public import DomainSemantics.Soundness.Nat.RecComputation
 import DomainSemantics.Soundness.Nat.Rules
+import DomainSemantics.Domain.Decoder.DecoderStrictness
 
 @[expose] public section
 
@@ -18,7 +19,7 @@ open Autosubst Autosubst.Notation
 
 namespace DomainSemantics
 
-open CoherentShape
+open CategoryTheory CoherentShape CodeAssignment Presheaf
 
 variable {Γ : List Term}
 
@@ -110,5 +111,14 @@ theorem IsDefEq.rawSoundness {t t' A : Term}
     (hΓ : Raw.WF Γ) (d : Γ ⊢ t ≡ t' : A) :
     RawJudgment (RawCtx.toCtx.obj ⟨Γ, hΓ⟩) t t' A :=
   d.rawSemantics hΓ hΓ.contextRen
+
+theorem Raw.WF.bottom_admissible {Γ : List Term} (hΓ : Raw.WF Γ) {Γ₁ : Ctx}
+    (σ : Γ₁ ⟶ ((RawCtx.toCtx.obj ⟨Γ, hΓ⟩) : Ctx)) : SourceAdmissible σ (fun _ ↦ ⊥) := by
+  induction hΓ with
+  | nil => exact .nil σ _
+  | cons hΓ hA ih =>
+    have htail := ih (σ ≫ Ctx.rawProjection (RawCtx.toCtx.obj ⟨_, hΓ⟩) hA)
+    exact SourceAdmissible.cons hA σ (fun _ ↦ ⊥) htail ((hA.rawSoundness hΓ).left.ideal _ _ htail)
+      ΩLower.isDirected_bot (rawExtend_bottom_payload piLimit_isPayloadStrict _)
 
 end DomainSemantics
