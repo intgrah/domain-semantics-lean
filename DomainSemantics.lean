@@ -96,6 +96,5 @@ public import DomainSemantics.Syntax.Comprehension
 public import DomainSemantics.Syntax.Comprehension.Pullback
 public import DomainSemantics.Syntax.Extrinsic
 public import DomainSemantics.Syntax.Intrinsic
-public import DomainSemantics.Syntax.Lift
 public import DomainSemantics.Syntax.Substitution
 public import DomainSemantics.Syntax.Typing

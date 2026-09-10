@@ -14,6 +14,8 @@ import DomainSemantics.Soundness.ComputationRules
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment Presheaf
@@ -97,17 +99,17 @@ namespace HasSubstitution
 
 theorem nat (Γ : Ctx) : HasSubstitution Γ .nat := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  simp only [Term.subst, rawInterpret, RawFamily.nat_value]
+  simp only [subst_nat, rawInterpret, RawFamily.nat_value]
 
 theorem zero (Γ : Ctx) : HasSubstitution Γ .zero := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  simp only [Term.subst, rawInterpret, RawFamily.zero_value]
+  simp only [subst_zero, rawInterpret, RawFamily.zero_value]
 
 theorem succ (hn : Γ.as.terms ⊢ n : .nat) (hS : HasSubstitution Γ n) :
     HasSubstitution Γ (.succ n) := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  have hn' : Γ₁.as.terms ⊢ n.subst θ.subst : .nat := hn.subst Γ₁.as.wf θ.typed
-  change (rawInterpret piLimit Γ₁ (.succ (n.subst θ.subst))).app _ σ.op ρt = _
+  have hn' : Γ₁.as.terms ⊢ n[θ.subst] : .nat := hn.subst Γ₁.as.wf θ.typed
+  change (rawInterpret piLimit Γ₁ (.succ (n[θ.subst]))).app _ σ.op ρt = _
   rw [rawInterpret_succ piLimit hn', rawInterpret_succ piLimit hn]
   simp only [RawFamily.succ_value]
   rw [hS θ σ ρs ρt hθ hρ]

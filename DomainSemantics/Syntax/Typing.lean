@@ -10,41 +10,42 @@ import DomainSemantics.Meta.Judgement
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
-open Term
+open Term Autosubst Autosubst.Notation
 
-judgement Raw.Lift' : Lift → List Term → List Term → Prop where
+judgement Raw.Ren : (Nat → Nat) → List Term → List Term → Prop where
 
   ──────────────────── refl
-  Raw.Lift' .refl Γ Γ
+  Raw.Ren id Γ Γ
 
-  Raw.Lift' l Γ Γ'
+  Raw.Ren ξ Γ Γ'
   ──────────────────── skip
-  Raw.Lift' (.skip l) Γ (A :: Γ')
+  Raw.Ren (ξ >> ↑) Γ (A :: Γ')
 
-  Raw.Lift' l Γ Γ'
+  Raw.Ren ξ Γ Γ'
   ──────────────────── cons
-  Raw.Lift' (.cons l) (A :: Γ) (A.lift' l :: Γ')
+  Raw.Ren (upRen_Term_Term ξ) (A :: Γ) (A⟨ξ⟩ :: Γ')
 
 judgement Lookup : List Term → Nat → Term → Prop where
 
   ──────────────────── zero
-  Lookup (ty :: Γ) 0 ty.lift
+  Lookup (ty :: Γ) 0 ty⟨↑⟩
 
   Lookup Γ n ty
   ──────────────────── succ
-  Lookup (A :: Γ) (n + 1) ty.lift
+  Lookup (A :: Γ) (n + 1) ty⟨↑⟩
 
-theorem Lookup.weak' (W : Raw.Lift' ρ Γ Γ') (h : Lookup Γ i A) :
-    Lookup Γ' (ρ.liftVar i) (A.lift' ρ) := by
+theorem Lookup.ren (W : Raw.Ren ξ Γ Γ') (h : Lookup Γ i A) : Lookup Γ' (ξ i) A⟨ξ⟩ := by
   induction W generalizing i A with
-  | refl => simp; exact h
-  | skip W ih => have' := (ih h).succ; rwa [Term.lift, ← Term.lift'_comp] at this
-  | cons W ih =>
+  | refl => simpa [rinstId_Term] using h
+  | @skip _ _ _ B _ ih => simpa [← renRen_Term] using (ih h).succ (A := B)
+  | cons _ ih =>
     cases h with
-    | zero => refine' cast _ Lookup.zero; congr 1; simp [Term.lift, ← Term.lift'_comp]
-    | succ h => refine' cast _ (ih h).succ; congr 1; simp [Term.lift, ← Term.lift'_comp]
+    | zero => simpa [ren_lift] using Lookup.zero
+    | succ h => simpa [ren_lift] using (ih h).succ
 
 theorem Lookup.uniq : Lookup Γ i A → Lookup Γ i B → A = B
   | .zero, .zero => rfl
@@ -83,9 +84,9 @@ judgement IsDefEq : List Term → Term → Term → Term → Prop where
   A :: Γ ⊢ B : .sort v
   Γ ⊢ f ≡ f' : .forallE A B
   Γ ⊢ a ≡ a' : A
-  Γ ⊢ B.inst a ≡ B.inst a' : .sort v
+  Γ ⊢ B[a/] ≡ B[a'/] : .sort v
   ──────────────────── appDF
-  Γ ⊢ .app f a ≡ .app f' a' : B.inst a
+  Γ ⊢ .app f a ≡ .app f' a' : B[a/]
 
   Γ ⊢ A ≡ A' : .sort u
   A :: Γ ⊢ B : .sort v
@@ -109,15 +110,15 @@ judgement IsDefEq : List Term → Term → Term → Term → Prop where
   Γ ⊢ A : .sort u
   A :: Γ ⊢ e : B
   Γ ⊢ e' : A
-  Γ ⊢ .app (.lam A e) e' : B.inst e'
-  Γ ⊢ e.inst e' : B.inst e'
+  Γ ⊢ .app (.lam A e) e' : B[e'/]
+  Γ ⊢ e[e'/] : B[e'/]
   ──────────────────── beta
-  Γ ⊢ .app (.lam A e) e' ≡ e.inst e' : B.inst e'
+  Γ ⊢ .app (.lam A e) e' ≡ e[e'/] : B[e'/]
 
   Γ ⊢ e : .forallE A B
-  Γ ⊢ .lam A (.app e.lift (.bvar 0)) : .forallE A B
+  Γ ⊢ .lam A (.app e⟨↑⟩ (.bvar 0)) : .forallE A B
   ──────────────────── eta
-  Γ ⊢ .lam A (.app e.lift (.bvar 0)) ≡ e : .forallE A B
+  Γ ⊢ .lam A (.app e⟨↑⟩ (.bvar 0)) ≡ e : .forallE A B
 
   ──────────────────── nat
   Γ ⊢ .nat : .type
@@ -131,27 +132,27 @@ judgement IsDefEq : List Term → Term → Term → Term → Prop where
 
   .nat :: Γ ⊢ C ≡ C' : .sort v
   Γ ⊢ M ≡ M' : .nat
-  Γ ⊢ a ≡ a' : C.inst .zero
+  Γ ⊢ a ≡ a' : C[Term.zero/]
   Γ ⊢ b ≡ b' : .natRecType C
-  Γ ⊢ C.inst M ≡ C'.inst M' : .sort v
+  Γ ⊢ C[M/] ≡ C'[M'/] : .sort v
   ──────────────────── natRecDF
-  Γ ⊢ .natRec C M a b ≡ .natRec C' M' a' b' : C.inst M
+  Γ ⊢ .natRec C M a b ≡ .natRec C' M' a' b' : C[M/]
 
   .nat :: Γ ⊢ C : .sort v
-  Γ ⊢ a : C.inst .zero
+  Γ ⊢ a : C[Term.zero/]
   Γ ⊢ b : Term.natRecType C
-  Γ ⊢ .natRec C .zero a b : C.inst .zero
+  Γ ⊢ .natRec C .zero a b : C[Term.zero/]
   ──────────────────── natRec_zero
-  Γ ⊢ .natRec C .zero a b ≡ a : C.inst .zero
+  Γ ⊢ .natRec C .zero a b ≡ a : C[Term.zero/]
 
   .nat :: Γ ⊢ C : .sort v
   Γ ⊢ n : .nat
-  Γ ⊢ a : C.inst .zero
+  Γ ⊢ a : C[Term.zero/]
   Γ ⊢ b : Term.natRecType C
-  Γ ⊢ .natRec C (.succ n) a b : C.inst (.succ n)
-  Γ ⊢ .app (.app b n) (.natRec C n a b) : C.inst (.succ n)
+  Γ ⊢ .natRec C (.succ n) a b : C[(Term.succ n)/]
+  Γ ⊢ .app (.app b n) (.natRec C n a b) : C[(Term.succ n)/]
   ──────────────────── natRec_succ
-  Γ ⊢ .natRec C (.succ n) a b ≡ .app (.app b n) (.natRec C n a b) : C.inst (.succ n)
+  Γ ⊢ .natRec C (.succ n) a b ≡ .app (.app b n) (.natRec C n a b) : C[(Term.succ n)/]
 
   Γ ⊢ A ≡ A' : .sort u
   Γ ⊢ a ≡ a' : A
@@ -170,22 +171,22 @@ judgement IsDefEq : List Term → Term → Term → Term → Prop where
   Γ ⊢ b ≡ b' : A
   A :: Γ ⊢ C ≡ C' : .sort v
   A' :: Γ ⊢ C ≡ C' : .sort v
-  Γ ⊢ x ≡ x' : C.inst a
+  Γ ⊢ x ≡ x' : C[a/]
   Γ ⊢ h ≡ h' : .id A a b
-  Γ ⊢ C.inst b ≡ C'.inst b' : .sort v
+  Γ ⊢ C[b/] ≡ C'[b'/] : .sort v
   Γ ⊢ .id A a b : .prop
   ──────────────────── trDF
-  Γ ⊢ .tr A a b C x h ≡ .tr A' a' b' C' x' h' : C.inst b
+  Γ ⊢ .tr A a b C x h ≡ .tr A' a' b' C' x' h' : C[b/]
 
   Γ ⊢ A : .sort u
   Γ ⊢ a ≡ b : A
   A :: Γ ⊢ C : .sort v
-  Γ ⊢ x : C.inst a
+  Γ ⊢ x : C[a/]
   Γ ⊢ h : .id A a b
-  Γ ⊢ .tr A a b C x h : C.inst b
-  Γ ⊢ x : C.inst b
+  Γ ⊢ .tr A a b C x h : C[b/]
+  Γ ⊢ x : C[b/]
   ──────────────────── tr_K
-  Γ ⊢ .tr A a b C x h ≡ x : C.inst b
+  Γ ⊢ .tr A a b C x h ≡ x : C[b/]
 
   Γ ⊢ p : .prop
   Γ ⊢ hp₁ : p
@@ -193,11 +194,11 @@ judgement IsDefEq : List Term → Term → Term → Term → Prop where
   ──────────────────── proofIrrel
   Γ ⊢ hp₁ ≡ hp₂ : p
 
-theorem IsDefEq.weak' (W : Raw.Lift' ρ Γ Γ') (h : Γ ⊢ e₁ ≡ e₂ : A) :
-    Γ' ⊢ e₁.lift' ρ ≡ e₂.lift' ρ : A.lift' ρ := by
-  induction h generalizing ρ Γ' with
-    simp -failIfUnchanged [lift'_inst_hi, lift'_natRecType] at *
-  | bvar h₁ _ ih => exact .bvar (h₁.weak' W) (ih W)
+theorem IsDefEq.ren (W : Raw.Ren ξ Γ Γ') (h : Γ ⊢ e₁ ≡ e₂ : A) :
+    Γ' ⊢ e₁⟨ξ⟩ ≡ e₂⟨ξ⟩ : A⟨ξ⟩ := by
+  induction h generalizing ξ Γ' with
+    simp -failIfUnchanged [ren_inst, ren_lift, ↓ren_natRecType] at *
+  | bvar h₁ _ ih => exact .bvar (h₁.ren W) (ih W)
   | symm _ ih => exact .symm (ih W)
   | trans _ _ ih₁ ih₂ => exact .trans (ih₁ W) (ih₂ W)
   | trans' _ _ ih₁ ih₂ => exact .trans' (ih₁ W) (ih₂ W)
@@ -207,9 +208,7 @@ theorem IsDefEq.weak' (W : Raw.Lift' ρ Γ Γ') (h : Γ ⊢ e₁ ≡ e₂ : A) :
   | forallEDF _ _ _ ih₁ ih₂ ih₃ => exact .forallEDF (ih₁ W) (ih₂ W.cons) (ih₃ W.cons)
   | defeqDF _ _ ih₁ ih₂ => exact .defeqDF (ih₁ W) (ih₂ W)
   | beta _ _ _ _ _ ih₁ ih₂ ih₃ ih₄ ih₅ => exact .beta (ih₁ W) (ih₂ W.cons) (ih₃ W) (ih₄ W) (ih₅ W)
-  | eta _ _ ih₁ ih₂ =>
-    exact cast (by simp [lift, ← lift'_comp])
-      (IsDefEq.eta (ih₁ W) (cast (by simp [lift, ← lift'_comp]) (ih₂ W)))
+  | eta _ _ ih₁ ih₂ => exact .eta (ih₁ W) (ih₂ W)
   | nat => exact .nat
   | zero => exact .zero
   | succDF _ ih => exact .succDF (ih W)
@@ -224,6 +223,9 @@ theorem IsDefEq.weak' (W : Raw.Lift' ρ Γ Γ') (h : Γ ⊢ e₁ ≡ e₂ : A) :
   | tr_K _ _ _ _ _ _ _ ih₁ ih₂ ih₃ ih₄ ih₅ ih₆ ih₇ =>
     exact .tr_K (ih₁ W) (ih₂ W) (ih₃ W.cons) (ih₄ W) (ih₅ W) (ih₆ W) (ih₇ W)
   | proofIrrel _ _ _ ih₁ ih₂ ih₃ => exact .proofIrrel (ih₁ W) (ih₂ W) (ih₃ W)
+
+theorem IsDefEq.weak {B : Term} (h : Γ ⊢ e₁ ≡ e₂ : A) : B :: Γ ⊢ e₁⟨↑⟩ ≡ e₂⟨↑⟩ : A⟨↑⟩ :=
+  h.ren (.skip .refl)
 
 theorem IsDefEq.hasType (h : Γ ⊢ e₁ ≡ e₂ : A) : Γ ⊢ e₁ : A ∧ Γ ⊢ e₂ : A :=
   ⟨h.trans h.symm, h.symm.trans h⟩
@@ -270,10 +272,10 @@ scoped notation:65 "⊢ " Γ:36 => Raw.WF Γ
 
 theorem Raw.WF.lookup {Γ : List Term} {i : Nat} {A : Term} : ⊢ Γ → Lookup Γ i A → Γ ⊢ A type
   | .nil, h => nomatch h
-  | .cons _ hA, .zero => ⟨_, hA.weak' (.skip .refl)⟩
+  | .cons _ hA, .zero => ⟨_, hA.weak⟩
   | .cons hΓ _, .succ hl =>
     have ⟨_, hA⟩ := hΓ.lookup hl
-    ⟨_, hA.weak' (.skip .refl)⟩
+    ⟨_, hA.weak⟩
 
 theorem IsDefEq.isType (hΓ : ⊢ Γ) : Γ ⊢ e₁ ≡ e₂ : A → Γ ⊢ A type
   | .bvar h' _ => hΓ.lookup h'
@@ -299,10 +301,6 @@ theorem IsDefEq.isType (hΓ : ⊢ Γ) : Γ ⊢ e₁ ≡ e₂ : A → Γ ⊢ A ty
   | .tr_K _ _ _ _ _ h _ => isType hΓ h
   | .proofIrrel h₁ _ _ => ⟨_, h₁⟩
 
-theorem Subst.lift_r_tail {σ : Subst} {ρ : Lift} :
-    (σ.lift_r ρ).tail = σ.tail.lift_r ρ :=
-  rfl
-
 set_option hygiene false in
 scoped notation:65 Γ₁ " ⊢ " σ₁:66 " ≡ " σ₂:66 " ⊣ " Γ₂:36 => Raw.SubstEq Γ₁ σ₁ σ₂ Γ₂
 
@@ -311,9 +309,9 @@ judgement Raw.SubstEq (Γ₁ : List Term) : Subst → Subst → List Term → Pr
   ──────────────────── nil
   Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ []
 
-  Γ₁ ⊢ σ₁.tail ≡ σ₂.tail ⊣ Γ₂
+  Γ₁ ⊢ (↑ >> σ₁) ≡ (↑ >> σ₂) ⊣ Γ₂
   Γ₂ ⊢ A : .sort u
-  Γ₁ ⊢ σ₁.head ≡ σ₂.head : A.subst σ₁.tail
+  Γ₁ ⊢ σ₁ 0 ≡ σ₂ 0 : A[(↑ >> σ₁)]
   ──────────────────── cons
   Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ A :: Γ₂
 
@@ -322,74 +320,51 @@ theorem Raw.SubstEq.left : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂ → Γ₁ ⊢ σ�
   | .cons W hA hhead => .cons W.left hA hhead.hasType.1
 
 theorem Raw.SubstEq.lookup (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂) :
-    Lookup Γ₂ i A → Γ₁ ⊢ σ₁ i ≡ σ₂ i : A.subst σ₁ := by
+    Lookup Γ₂ i A → Γ₁ ⊢ σ₁ i ≡ σ₂ i : A[σ₁] := by
   intro h
   induction W generalizing i A with
   | nil => nomatch h
   | cons W' hA' hhead ih =>
     cases h with
-    | zero =>
-      simp [show ∀ (s : Subst), s 0 = s.head from fun _ => rfl, lift_subst]
-      exact hhead
-    | @succ Γ₃ n ty B h' =>
-      simp [show ∀ (s : Subst) n, s (n + 1) = s.tail n from fun _ _ => rfl, lift_subst]
-      exact ih h'
+    | zero => simpa [renSubst_Term] using hhead
+    | succ h' => simpa [renSubst_Term] using ih h'
 
 theorem Raw.SubstEq.skip (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂) :
-    B :: Γ₁ ⊢ σ₁.lift_r (.skip .refl) ≡ σ₂.lift_r (.skip .refl) ⊣ Γ₂ := by
+    B :: Γ₁ ⊢ σ₁ >> ⟨↑⟩ ≡ σ₂ >> ⟨↑⟩ ⊣ Γ₂ := by
   induction W with
   | nil => exact .nil
   | cons _ hA' hhead ih =>
-    refine .cons (Subst.lift_r_tail ▸ ih) hA' ?_
-    rw [Subst.lift_r_tail]
-    simpa [lift'_subst, Subst.head, Subst.lift_r] using hhead.weak' (Raw.Lift'.skip .refl)
+    refine .cons ih hA' ?_
+    simpa [substRen_Term] using hhead.weak
 
 theorem Raw.SubstEq.lift (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂)
     (hA : Γ₂ ⊢ A : .sort u)
-    (hA' : Γ₁ ⊢ A.subst σ₁ : .sort u) :
-    A.subst σ₁ :: Γ₁ ⊢ σ₁.lift ≡ σ₂.lift ⊣ A :: Γ₂ := by
-  have htail : σ₁.lift.tail = σ₁.lift_r (.skip .refl) := by
-    funext i; simp [Subst.tail, Subst.lift, Subst.lift_r]
-  have htail' : σ₂.lift.tail = σ₂.lift_r (.skip .refl) := by
-    funext i; simp [Subst.tail, Subst.lift, Subst.lift_r]
-  refine .cons (htail ▸ htail' ▸ W.skip) hA ?_
-  show A.subst σ₁ :: Γ₁ ⊢ .bvar 0 : A.subst σ₁.lift.tail
-  rw [htail]
-  rw [show A.subst (σ₁.lift_r (.skip .refl)) = (A.subst σ₁).lift' (.skip .refl) from
-    (lift'_subst).symm]
-  exact .bvar Lookup.zero (hA'.weak' (.skip .refl))
+    (hA' : Γ₁ ⊢ A[σ₁] : .sort u) :
+    A[σ₁] :: Γ₁ ⊢ ⇑σ₁ ≡ ⇑σ₂ ⊣ A :: Γ₂ := by
+  refine .cons W.skip hA ?_
+  simpa [substRen_Term] using IsDefEq.bvar Lookup.zero hA'.weak
 
-theorem Raw.SubstEq.id {Γ₁ : List Term} (hΓ₁ : ⊢ Γ₁) : Γ₁ ⊢ .id ≡ .id ⊣ Γ₁ := by
+theorem Raw.SubstEq.id {Γ₁ : List Term} (hΓ₁ : ⊢ Γ₁) : Γ₁ ⊢ Term.bvar ≡ Term.bvar ⊣ Γ₁ := by
   induction hΓ₁ with
   | nil => exact .nil
   | @cons _ A _ _ hA ih =>
     refine .cons ih.skip hA ?_
-    rw [show A.subst Subst.id.tail = A.lift' (.skip .refl) by
-      show A.subst (Subst.id.lift_r (.skip .refl)) = _
-      rw [← lift'_subst, subst_id]]
-    exact .bvar Lookup.zero (hA.weak' (.skip .refl))
+    simpa [rinstInst'_Term] using IsDefEq.bvar Lookup.zero hA.weak
 
 theorem Raw.SubstEq.lift_at (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂)
     (hA : Γ₂ ⊢ A : .sort u)
     (hX : Γ₁ ⊢ X : .sort u)
-    (hAX : Γ₁ ⊢ A.subst σ₁ ≡ X : .sort u) :
-    X :: Γ₁ ⊢ σ₁.lift ≡ σ₂.lift ⊣ A :: Γ₂ := by
-  have htail : σ₁.lift.tail = σ₁.lift_r (.skip .refl) := by
-    funext i; simp [Subst.tail, Subst.lift, Subst.lift_r]
-  have htail' : σ₂.lift.tail = σ₂.lift_r (.skip .refl) := by
-    funext i; simp [Subst.tail, Subst.lift, Subst.lift_r]
-  refine .cons (htail ▸ htail' ▸ W.skip) hA ?_
-  show X :: Γ₁ ⊢ .bvar 0 : A.subst σ₁.lift.tail
-  rw [htail, (lift'_subst).symm]
-  exact .defeqDF (hAX.symm.weak' (.skip .refl))
-    (.bvar .zero (hX.weak' (.skip .refl)))
+    (hAX : Γ₁ ⊢ A[σ₁] ≡ X : .sort u) :
+    X :: Γ₁ ⊢ ⇑σ₁ ≡ ⇑σ₂ ⊣ A :: Γ₂ := by
+  refine .cons W.skip hA ?_
+  simpa [substRen_Term] using IsDefEq.defeqDF hAX.symm.weak (.bvar .zero hX.weak)
 
 theorem IsDefEq.subst {Γ₁ Γ₂ : List Term} {σ₁ σ₂ : Subst} {e₁ e₂ A : Term} (hΓ₁ : ⊢ Γ₁)
     (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂) (h : Γ₂ ⊢ e₁ ≡ e₂ : A) :
-    Γ₁ ⊢ e₁.subst σ₁ ≡ e₂.subst σ₂ : A.subst σ₁ := by
+    Γ₁ ⊢ e₁[σ₁] ≡ e₂[σ₂] : A[σ₁] := by
   suffices ∀ {Γ₁ σ₁ σ₂}, ⊢ Γ₁ → Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂ →
-      Γ₁ ⊢ e₁.subst σ₁ ≡ e₁.subst σ₂ : A.subst σ₁ ∧
-      Γ₁ ⊢ e₁.subst σ₁ ≡ e₂.subst σ₂ : A.subst σ₁ from (this hΓ₁ W).2
+      Γ₁ ⊢ e₁[σ₁] ≡ e₁[σ₂] : A[σ₁] ∧
+      Γ₁ ⊢ e₁[σ₁] ≡ e₂[σ₂] : A[σ₁] from (this hΓ₁ W).2
   clear hΓ₁ W Γ₁ σ₁ σ₂
   intro Γ₁ σ₁ σ₂ hΓ₁ W
   induction h generalizing Γ₁ σ₁ σ₂ with
@@ -413,7 +388,7 @@ theorem IsDefEq.subst {Γ₁ Γ₂ : List Term} {σ₁ σ₂ : Subst} {e₁ e₂
   | eta _ _ ih₁ ih₂ =>
     refine ⟨(ih₂ hΓ₁ W).1, .trans ?_ (ih₁ hΓ₁ W).1⟩
     have hη := (ih₂ hΓ₁ W.left).1
-    simp [Term.subst, lift_subst_lift, Subst.lift] at hη ⊢
+    simp [lift_subst_lift] at hη ⊢
     exact .eta (ih₁ hΓ₁ W.left).1 hη
   | beta hA _ _ _ _ ih₁ ih₂ ih₃ ih₄ ih₅ =>
     have hAσ := (ih₁ hΓ₁ W.left).1
@@ -425,10 +400,10 @@ theorem IsDefEq.subst {Γ₁ Γ₂ : List Term} {σ₁ σ₂ : Subst} {e₁ e₂
   | @appDF Γ₂ A u B v f f' a a' hA _ _ _ _ ih₁ ih₂ ih₃ ih₄ _ =>
     have hAσ := (ih₁ hΓ₁ W.left).1
     have hBσ := (ih₂ (.cons hΓ₁ hAσ) (W.left.lift hA hAσ)).1
-    have hB {x y} (hxy : Γ₁ ⊢ x ≡ y : A.subst σ₁) :
-        Γ₁ ⊢ (B.subst σ₁.lift).inst x ≡ (B.subst σ₁.lift).inst y : .sort v := by
+    have hB {x y} (hxy : Γ₁ ⊢ x ≡ y : A[σ₁]) :
+        Γ₁ ⊢ B[⇑σ₁][x/] ≡ B[⇑σ₁][y/] : .sort v := by
       simpa! [inst_lift_cons] using
-        (ih₂ hΓ₁ (.cons (σ₁ := σ₁.cons x) (σ₂ := σ₁.cons y) W.left hA hxy)).1
+        (ih₂ hΓ₁ (.cons (σ₁ := x .: σ₁) (σ₂ := y .: σ₁) W.left hA hxy)).1
     have ⟨lf, cf⟩ := ih₃ hΓ₁ W
     have ⟨la, ca⟩ := ih₄ hΓ₁ W
     exact subst_inst ▸ ⟨.appDF hAσ hBσ lf la (hB la), .appDF hAσ hBσ cf ca (hB ca)⟩
@@ -462,7 +437,7 @@ theorem IsDefEq.subst {Γ₁ Γ₂ : List Term} {σ₁ σ₂ : Subst} {e₁ e₂
     have ⟨la, ca⟩ := ih₃ hΓ₁ W
     have ⟨lb, cb⟩ := ih₄ hΓ₁ W
     have ⟨lCM, cCM⟩ := ih₅ hΓ₁ W
-    simp [subst_inst, subst_natRecType] at la ca lb cb lCM cCM ⊢
+    simp [subst_inst, ↓subst_natRecType] at la ca lb cb lCM cCM ⊢
     exact ⟨.natRecDF lC lM la lb lCM, .natRecDF cC cM ca cb cCM⟩
   | @natRec_zero Γ₂ C v a b _ _ _ _ ih₁ ih₂ ih₃ ih₄ =>
     refine ⟨(ih₄ hΓ₁ W).1, .trans ?_ (ih₂ hΓ₁ W).1⟩
@@ -515,42 +490,35 @@ theorem IsDefEq.subst {Γ₁ Γ₂ : List Term} {σ₁ σ₂ : Subst} {e₁ e₂
       (subst_inst ▸ (ih₆ hΓ₁ W.left).1 :) (subst_inst ▸ (ih₇ hΓ₁ W.left).1 :)
 
 theorem IsDefEqType.subst {Γ₁ Γ₂ : List Term} {σ₁ σ₂ : Subst} {A B : Term} (hΓ₁ : ⊢ Γ₁)
-    (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂) (h : Γ₂ ⊢ A ≡ B type) : Γ₁ ⊢ A.subst σ₁ ≡ (B.subst σ₂) type :=
+    (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂) (h : Γ₂ ⊢ A ≡ B type) : Γ₁ ⊢ A[σ₁] ≡ (B[σ₂]) type :=
   let ⟨u, h⟩ := h
   ⟨u, h.subst hΓ₁ W⟩
 
 theorem Raw.SubstEq.one (hΓ₁ : ⊢ Γ₁) (h₀ : Γ₁ ⊢ e₀ : A₀) :
-    Γ₁ ⊢ Subst.one e₀ ≡ Subst.one e₀ ⊣ A₀ :: Γ₁ :=
+    Γ₁ ⊢ [e₀/] ≡ [e₀/] ⊣ A₀ :: Γ₁ :=
   have ⟨_, hA₀⟩ := h₀.isType hΓ₁
   .cons (Raw.SubstEq.id hΓ₁) hA₀ (subst_id ▸ h₀)
 
 theorem IsDefEq.inst0 (hΓ : ⊢ Γ)
     (h₀ : Γ ⊢ e₀ : A₀)
     (h : A₀::Γ ⊢ e₁ ≡ e₂ : A) :
-    Γ ⊢ e₁.inst e₀ ≡ e₂.inst e₀ : A.inst e₀ :=
+    Γ ⊢ e₁[e₀/] ≡ e₂[e₀/] : A[e₀/] :=
   h.subst hΓ (Raw.SubstEq.one hΓ h₀)
 
 theorem IsDefEq.instDF (hΓ : ⊢ Γ)
     (hA : Γ ⊢ A : .sort u)
     (hf : A::Γ ⊢ f ≡ f' : B)
     (ha : Γ ⊢ a ≡ a' : A) :
-    Γ ⊢ f.inst a ≡ f'.inst a' : B.inst a :=
+    Γ ⊢ f[a/] ≡ f'[a'/] : B[a/] :=
   hf.subst hΓ (.cons (Raw.SubstEq.id hΓ) hA (subst_id ▸ ha))
-
-theorem lift_cons_skip_inst_bvar0 {X : Term} :
-    (X.lift' (.cons (.skip .refl))).inst (.bvar 0) = X := by
-  have hsub : (Subst.lift_l (.cons (.skip .refl)) (Subst.one (.bvar 0))) = (Subst.id : Subst) := by
-    funext i; cases i <;> rfl
-  show (X.lift' (.cons (.skip .refl))).subst (.one (.bvar 0)) = X
-  rw [subst_lift', hsub, subst_id]
 
 theorem IsDefEq.defeqDF_l (hΓ : ⊢ Γ)
     (h₁ : Γ ⊢ A ≡ A' : .sort u)
     (h₂ : A::Γ ⊢ e₁ ≡ e₂ : B) : A'::Γ ⊢ e₁ ≡ e₂ : B := by
-  have hbvar : A' :: Γ ⊢ .bvar 0 : A.lift :=
-    (h₁.weak' (.skip .refl)).symm.defeqDF (.bvar .zero (h₁.hasType.2.weak' (.skip .refl)))
-  simpa [lift_cons_skip_inst_bvar0] using
-    IsDefEq.inst0 (.cons hΓ h₁.hasType.2) hbvar (h₂.weak' (.cons (.skip .refl)))
+  have hbvar : A' :: Γ ⊢ .bvar 0 : A⟨↑⟩ :=
+    h₁.weak.symm.defeqDF (.bvar .zero h₁.hasType.2.weak)
+  simpa [ren_up_shift_inst_bvar0] using
+    IsDefEq.inst0 (.cons hΓ h₁.hasType.2) hbvar (h₂.ren (.cons (.skip .refl)))
 
 theorem IsDefEq.bvar₀ (hΓ : ⊢ Γ) (h : Lookup Γ i A) : Γ ⊢ .bvar i : A :=
   have ⟨_, hA⟩ := hΓ.lookup h; .bvar h hA
@@ -563,21 +531,18 @@ theorem IsDefEq.forallEDF₀ (hΓ : ⊢ Γ)
 theorem IsDefEq.natRecDF₀ (hΓ : ⊢ Γ)
     (hC : .nat::Γ ⊢ C ≡ C' : .sort v)
     (hM : Γ ⊢ M ≡ M' : .nat)
-    (ha : Γ ⊢ a ≡ a' : C.inst .zero)
+    (ha : Γ ⊢ a ≡ a' : C[Term.zero/])
     (hb : Γ ⊢ b ≡ b' : Term.natRecType C) :
-    Γ ⊢ .natRec C M a b ≡ .natRec C' M' a' b' : C.inst M :=
+    Γ ⊢ .natRec C M a b ≡ .natRec C' M' a' b' : C[M/] :=
   .natRecDF hC hM ha hb (.instDF hΓ .nat hC hM)
 
 theorem IsDefEq.natRecStepDF (hΓ : ⊢ Γ) (hC : .nat::Γ ⊢ C ≡ C' : .sort v) :
     C::.nat::Γ ⊢ Term.natRecStep C ≡ Term.natRecStep C' : .sort v := by
   have hΓn : ⊢ .nat::Γ := .cons hΓ .nat
   have hΓnC : ⊢ C::.nat::Γ := .cons hΓn hC.hasType.1
-  have hC' : (Term.nat.lift' (.skip (.skip .refl)))::C::.nat::Γ ⊢
-      C.lift' (.cons (.skip (.skip .refl))) ≡ C'.lift' (.cons (.skip (.skip .refl))) : .sort v :=
-    hC.weak' (.cons (Γ' := C::.nat::Γ) (.skip (.skip .refl)))
   have hn : C::.nat::Γ ⊢ .succ (.bvar 1) : .nat :=
     .succDF (.bvar₀ hΓnC (Lookup.succ Lookup.zero))
-  exact IsDefEq.inst0 hΓnC hn hC'
+  exact IsDefEq.inst0 hΓnC hn (hC.ren (.cons (Γ' := C::.nat::Γ) (.skip (.skip .refl))))
 
 theorem IsDefEq.natRecStep_ty (hΓ : ⊢ Γ) (hC : .nat::Γ ⊢ C : .sort v) :
     C::.nat::Γ ⊢ Term.natRecStep C : .sort v := .natRecStepDF hΓ hC

@@ -11,6 +11,8 @@ import DomainSemantics.Soundness.StructuralRules
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 variable {Γ : Ctx} {A A' B C a a' b b' t t' p x h : Term} {u v : Bool}
@@ -99,9 +101,9 @@ theorem beta (hA : Γ.as.terms ⊢ A : .sort u) (ha : Γ.as.terms ⊢ a : A)
     (pA : RawJudgment Γ A A (.sort u))
     (pb : RawJudgment (Ctx.extension Γ hA) b b B)
     (pa : RawJudgment Γ a a A)
-    (pApp : RawJudgment Γ (.app (.lam A b) a) (.app (.lam A b) a) (B.inst a))
-    (pInst : RawJudgment Γ (b.inst a) (b.inst a) (B.inst a)) :
-    RawJudgment Γ (.app (.lam A b) a) (b.inst a) (B.inst a) :=
+    (pApp : RawJudgment Γ (.app (.lam A b) a) (.app (.lam A b) a) (B[a/]))
+    (pInst : RawJudgment Γ (b[a/]) (b[a/]) (B[a/])) :
+    RawJudgment Γ (.app (.lam A b) a) (b[a/]) (B[a/]) :=
   of_typings pApp pInst
     (HasEquality.beta hA ha pA.left.ideal pb.left.ideal pa.left.ideal pa.fixed
       pa.left.ren pb.left.subst)
@@ -109,13 +111,12 @@ theorem beta (hA : Γ.as.terms ⊢ A : .sort u) (ha : Γ.as.terms ⊢ a : A)
 theorem tr_K (hA : Γ.as.terms ⊢ A : .sort u) (hab : Γ.as.terms ⊢ a ≡ b : A)
     (pA : RawJudgment Γ A A (.sort u)) (pab : RawJudgment Γ a b A)
     (pC : RawJudgment (Ctx.extension Γ hA) C C (.sort v))
-    (px : RawJudgment Γ x x (C.inst a))
-    (pTr : RawJudgment Γ (.tr A a b C x h) (.tr A a b C x h) (C.inst b))
-    (pTarget : RawJudgment Γ x x (C.inst b)) :
-    RawJudgment Γ (.tr A a b C x h) x (C.inst b) :=
+    (px : RawJudgment Γ x x (C[a/]))
+    (pTr : RawJudgment Γ (.tr A a b C x h) (.tr A a b C x h) (C[b/]))
+    (pTarget : RawJudgment Γ x x (C[b/])) :
+    RawJudgment Γ (.tr A a b C x h) x (C[b/]) :=
   of_typings pTr pTarget
-    (HasEquality.tr_K hA hab pA.left.ideal pab.left.ideal pab.fixed pab.left.ren
-      pab.equal pC.left.subst px.fixed)
+    (HasEquality.tr_K hA hab pA.left.ideal pab.left.ideal pab.fixed pab.left.ren pab.equal pC.left.subst px.fixed)
 
 end RawJudgment
 
@@ -130,7 +131,7 @@ variable {Γ : Ctx} {A a b C x h : Term} {u : Bool}
 theorem RawTermProperties.transport (hA : Γ.as.terms ⊢ A : .sort u) (hb : Γ.as.terms ⊢ b : A)
     (hAI : HasIdeality Γ A) (pb : RawTermProperties Γ b) (hbF : HasFixedness Γ b A)
     (pC : RawTermProperties (Ctx.extension Γ hA) C) (px : RawTermProperties Γ x)
-    (hTI : HasIdeality Γ (C.inst b)) : RawTermProperties Γ (.tr A a b C x h) where
+    (hTI : HasIdeality Γ (C[b/])) : RawTermProperties Γ (.tr A a b C x h) where
   ideal := by
     intro Γ₁ σ ρ hρ
     rw [rawInterpret_transport_value hA hb hAI pb.ideal hbF pb.ren pC.subst σ ρ hρ]
@@ -140,13 +141,13 @@ theorem RawTermProperties.transport (hA : Γ.as.terms ⊢ A : .sort u) (hb : Γ.
 
 theorem RawJudgment.trDF {A' a' b' C' x' h' : Term} {v : Bool}
     (hAA' : Γ.as.terms ⊢ A ≡ A' : .sort u) (hbb' : Γ.as.terms ⊢ b ≡ b' : A)
-    (hTarget : Γ.as.terms ⊢ C.inst b ≡ C'.inst b' : .sort v)
+    (hTarget : Γ.as.terms ⊢ C[b/] ≡ C'[b'/] : .sort v)
     (pA : RawJudgment Γ A A' (.sort u)) (pb : RawJudgment Γ b b' A)
     (pC : RawJudgment (Ctx.extension Γ hAA'.hasType.1) C C' (.sort v))
     (pC' : RawJudgment (Ctx.extension Γ hAA'.hasType.2) C C' (.sort v))
-    (px : RawJudgment Γ x x' (C.inst a))
-    (pTarget : RawJudgment Γ (C.inst b) (C'.inst b') (.sort v)) :
-    RawJudgment Γ (.tr A a b C x h) (.tr A' a' b' C' x' h') (C.inst b) := by
+    (px : RawJudgment Γ x x' (C[a/]))
+    (pTarget : RawJudgment Γ (C[b/]) (C'[b'/]) (.sort v)) :
+    RawJudgment Γ (.tr A a b C x h) (.tr A' a' b' C' x' h') (C[b/]) := by
   have hb' : Γ.as.terms ⊢ b' : A' := hAA'.defeqDF hbb'.hasType.2
   have hbF' : HasFixedness Γ b' A' :=
     HasFixedness.convert pb.fixed_right pA.equal

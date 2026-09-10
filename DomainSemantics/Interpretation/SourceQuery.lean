@@ -12,6 +12,8 @@ import DomainSemantics.Interpretation.BinderSupport
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape.RawFamily
 
 open CategoryTheory
@@ -27,13 +29,13 @@ theorem sourceQuery_eq_of_section (hA : Γ₁.as.terms ⊢ A : .sort u)
   have ⟨s, hover, hgeneric⟩ := hs
   obtain ⟨σ₁, rfl⟩ := RawCtx.toCtx.map_surjective σ₁
   obtain ⟨σ₂, rfl⟩ := RawCtx.toCtx.map_surjective s
-  have htail : Γ₂.as.terms ⊢ σ₂.subst.tail ≡ σ₁.subst ⊣ Γ₁.as.terms := by
+  have htail : Γ₂.as.terms ⊢ (↑ >> σ₂.subst) ≡ σ₁.subst ⊣ Γ₁.as.terms := by
     have htail' := (RawCtx.toCtx_map_eq_iff ((Ctx.projectionRaw Γ₁ hA).comp σ₂) σ₁).mp hover
     rwa [Ctx.projectionRaw_comp_subst] at htail'
   unfold Tm.rawBinderVar at hgeneric
   erw [Tm.map_ofTyping, Tm.map_ofTyping] at hgeneric
   have ⟨⟨v, htype⟩, _⟩ := Tm.pairOfTyping_eq_iff.mp hgeneric
-  simp! [lift_subst] at htype
+  simp! [renSubst_Term] at htype
   erw [Tm.map_ofTyping, Tm.map_ofTyping]
   exact Tm.pairOfTyping_eq ⟨v, htype.symm.trans' (hA.subst Γ₂.as.wf htail)⟩
     (ha'.subst σ₁.srcWF σ₁.typed)

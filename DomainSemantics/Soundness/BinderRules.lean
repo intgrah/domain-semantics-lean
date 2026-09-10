@@ -19,6 +19,8 @@ import DomainSemantics.Soundness.StructuralRules
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment Presheaf
@@ -112,7 +114,7 @@ theorem HasFixedness.section_sort (hA : Γ.as.terms ⊢ A : .sort u) (hAI : HasI
   exact h
 
 theorem HasFixedness.normalizedBodyAction_prop_code (hA : Γ.as.terms ⊢ A : .sort u) (hAI : HasIdeality Γ A)
-    (hB : HasFixedness (Ctx.extension Γ hA) B (.sort false))
+    (hB : HasFixedness (Ctx.extension Γ hA) B .prop)
     (σ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁) (hρ : SourceAdmissible σ ρ)
     (σ₁ : Γ₂ ⟶ Γ₁) (name : Σ A : Ty Γ₂, Tm Γ₂ A) (x y : CoherentShape Γ₂)
     (hy : ((RawFamily.normalizedBodyAction piLimit (Ctx.rawDisplay hA) (rawInterpret piLimit Γ A)
@@ -255,7 +257,7 @@ theorem section_contextConversion
   have hcoords : (fun i ↦ ((ρ.pullback σ₁).push (J.val.pullback σ₁)) (r.index i)) =
       (ρ.pullback σ₁).push (J.val.pullback σ₁) := rfl
   have h := hb' r s.hom ((ρ.pullback σ₁).push (J.val.pullback σ₁)) hadm
-  change (rawInterpret piLimit _ (b'.subst Subst.id)).app _ _ _ = _ at h
+  change (rawInterpret piLimit _ (b'[Term.bvar])).app _ _ _ = _ at h
   rw [subst_id, hr, hcoords] at h
   exact h.symm
 

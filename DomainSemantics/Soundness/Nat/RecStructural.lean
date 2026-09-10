@@ -16,6 +16,8 @@ import DomainSemantics.Soundness.StructuralRules
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment Presheaf
@@ -24,7 +26,7 @@ variable {Γ Γ₁ Γ₂ : Ctx} {C M a b : Term} {v : Bool}
 
 theorem RawFamily.natRec_substitution_eq
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hM : Γ.as.terms ⊢ M : .nat)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/]) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
     (θ : Γ₁.as ⟶ Γ.as)
     (Cs : RawFamily (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type)))
     (Ct : RawFamily (Ctx.extension Γ₁ (.nat : Γ₁.as.terms ⊢ .nat : .type)))
@@ -81,14 +83,14 @@ theorem RawFamily.natRec_substitution_eq
   · exact hbody
 
 theorem HasSubstitution.natRec (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hM : Γ.as.terms ⊢ M : .nat)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/]) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
     (hMI : HasIdeality Γ M)
     (hCS : HasSubstitution (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type)) C)
     (hMS : HasSubstitution Γ M) (haS : HasSubstitution Γ a) (hbS : HasSubstitution Γ b) :
     HasSubstitution Γ (.natRec C M a b) := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  change (rawInterpret piLimit Γ₁ (.natRec (C.subst θ.subst.lift) (M.subst θ.subst)
-    (a.subst θ.subst) (b.subst θ.subst))).app _ σ.op ρt = _
+  change (rawInterpret piLimit Γ₁ (.natRec (C[⇑θ.subst]) (M[θ.subst])
+    (a[θ.subst]) (b[θ.subst]))).app _ σ.op ρt = _
   rw [rawInterpret_natRec piLimit hC hM ha hb,
     rawInterpret_natRec piLimit (Tm.natRec.substMotive hC θ)
       (hM.subst θ.srcWF θ.typed) (Tm.natRec.substZero ha θ)

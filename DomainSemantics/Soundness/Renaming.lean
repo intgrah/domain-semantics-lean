@@ -10,6 +10,8 @@ import DomainSemantics.Meta.Judgement
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
 open CategoryTheory
@@ -69,7 +71,7 @@ def HasRenaming (Γ : Ctx) (t : Term) : Prop :=
   ∀ {Γ₁ Γ₂ : Ctx} (r : Ctx.VariableMap Γ₁ Γ) (σ : Γ₂ ⟶ Γ₁)
     (ρ : RawValuation Γ₂),
     SourceAdmissible (σ ≫ r.hom) (fun i ↦ ρ (r.index i)) →
-      (rawInterpret CodeAssignment.piLimit Γ₁ (t.subst r.toRawHom.subst)).app _ σ.op ρ =
+      (rawInterpret CodeAssignment.piLimit Γ₁ (t[r.toRawHom.subst])).app _ σ.op ρ =
         (rawInterpret CodeAssignment.piLimit Γ t).app _ (σ ≫ r.hom).op
           (fun i ↦ ρ (r.index i))
 
@@ -89,7 +91,7 @@ theorem ContextRen.lookup (hΓ : ContextRen Γ) {i : ℕ} {A : Term}
     (hρ : SourceAdmissible (σ ≫ r.hom) (fun j ↦ ρ (r.index j))) :
     (ρ (r.index i)).IsDirected ∧
       CodeAssignment.piLimit.rawExtend
-        ((rawInterpret CodeAssignment.piLimit Γ₁ (A.subst r.toRawHom.subst)).app _ σ.op ρ)
+        ((rawInterpret CodeAssignment.piLimit Γ₁ (A[r.toRawHom.subst])).app _ σ.op ρ)
         (ρ (r.index i)) = ρ (r.index i) := by
   induction hΓ generalizing Γ₁ i A with
   | nil => cases hi
@@ -102,16 +104,16 @@ theorem ContextRen.lookup (hΓ : ContextRen Γ) {i : ℕ} {A : Term}
     | zero =>
       have ⟨_, _, hdir, hfixed⟩ := (SourceAdmissible.cons_iff hB _ _).mp hρ
       refine ⟨hdir, ?_⟩
-      rw [lift_subst]
+      rw [renSubst_Term]
       change CodeAssignment.piLimit.rawExtend
         ((rawInterpret CodeAssignment.piLimit Γ₁
-          (B.subst (r.tail hB).toRawHom.subst)).app _ σ.op ρ)
+          (B[(r.tail hB).toRawHom.subst])).app _ σ.op ρ)
         (ρ (r.index 0)) = ρ (r.index 0)
       rw [hBren (r.tail hB) σ ρ htail]
       rw [Ctx.VariableMap.tail_hom, ← Category.assoc]
       exact hfixed
     | succ hi =>
-      rw [lift_subst]
+      rw [renSubst_Term]
       exact ih hi (r.tail hB) σ htail
 
 theorem ContextRen.bvar (hΓ : ContextRen Γ) {i : ℕ} {A : Term}
@@ -128,7 +130,7 @@ theorem ContextRen.bvar (hΓ : ContextRen Γ) {i : ℕ} {A : Term}
     exact hρ
   have h := hΓ.lookup hi (Ctx.VariableMap.id Γ) σ ρ hρ'
   change (ρ i).IsDirected ∧ CodeAssignment.piLimit.rawExtend
-    ((rawInterpret CodeAssignment.piLimit Γ (A.subst Subst.id)).app _ σ.op ρ)
+    ((rawInterpret CodeAssignment.piLimit Γ (A[Term.bvar])).app _ σ.op ρ)
     (ρ i) = ρ i at h
   change (ρ i).IsDirected ∧ CodeAssignment.piLimit.rawExtend
     ((rawInterpret CodeAssignment.piLimit Γ A).app _ σ.op ρ) (ρ i) = ρ i

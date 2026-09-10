@@ -9,13 +9,15 @@ public import DomainSemantics.Domain.Nat.Relation
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape.NatRecLabelRelation
 
 open CategoryTheory
 
 theorem syntactic_pullback {Γ₁ Γ₂ : Ctx} {C a b : Term} {v : Bool}
     (hC : .nat :: Γ₁.as.terms ⊢ C : .sort v)
-    (ha : Γ₁.as.terms ⊢ a : C.inst .zero)
+    (ha : Γ₁.as.terms ⊢ a : C[Term.zero/])
     (hb : Γ₁.as.terms ⊢ b : Term.natRecType C)
     (σ₁ : Γ₂.as ⟶ Γ₁.as) :
     (syntactic hC ha hb).pullback (RawCtx.toCtx.map σ₁) =

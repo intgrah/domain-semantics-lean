@@ -13,6 +13,8 @@ import DomainSemantics.Soundness.Nat.StepApplication
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment
@@ -21,14 +23,14 @@ variable {Γ Γ₁ : Ctx} {C n a b : Term} {v : Bool}
 
 theorem rawInterpret_natRec_succ_projected
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hn : Γ.as.terms ⊢ n : .nat)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/]) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
     (hCI : HasIdeality (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type)) C)
     (hnI : HasIdeality Γ n) (hnF : HasFixedness Γ n .nat) (hnS : HasSubstitution Γ n)
     (hCS : HasSubstitution (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type)) C)
     (haI : HasIdeality Γ a) (hbI : HasIdeality Γ b)
     (σ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁) (hρ : SourceAdmissible σ ρ) :
     (rawInterpret piLimit Γ (.natRec C (.succ n) a b)).app _ σ.op ρ =
-      piLimit.rawExtend ((rawInterpret piLimit Γ (C.inst (.succ n))).app _ σ.op ρ)
+      piLimit.rawExtend ((rawInterpret piLimit Γ (C[(Term.succ n)/])).app _ σ.op ρ)
         (rawApplication
           (rawApplication ((rawInterpret piLimit Γ b).app _ σ.op ρ)
             {Tm.presheaf.map σ.op (Tm.pairOfTyping Γ.as.wf .nat hn)}
@@ -62,7 +64,7 @@ theorem rawInterpret_natRec_succ_projected
     simpa [R, predecessor, result] using (NatRecLabelRelation.syntactic hC ha hb).natural h σ
 
   have hcode : U.app _ ((𝟙 Γ₁).op, successor) (succIdeal predecessor N).val =
-      (rawInterpret piLimit Γ (C.inst (.succ n))).app _ σ.op ρ := by
+      (rawInterpret piLimit Γ (C[(Term.succ n)/])).app _ σ.op ρ := by
     have h := rawInterpret_natMotive_value (C := C) (IsDefEq.succDF hn)
       (HasIdeality.succ hn hnI) (HasFixedness.succ hn hnF)
       (HasRenaming.of_substitution (HasSubstitution.succ hn hnS)) hCS σ ρ hρ
@@ -80,11 +82,11 @@ theorem rawInterpret_natRec_succ_projected
 
 theorem HasEquality.natRec_succ
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hn : Γ.as.terms ⊢ n : .nat)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/]) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
     (pC : RawJudgment (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type)) C C (.sort v))
-    (pn : RawJudgment Γ n n .nat) (pa : RawJudgment Γ a a (C.inst .zero))
+    (pn : RawJudgment Γ n n .nat) (pa : RawJudgment Γ a a (C[Term.zero/]))
     (pb : RawJudgment Γ b b (Term.natRecType C))
-    (hStep : HasFixedness Γ (.app (.app b n) (.natRec C n a b)) (C.inst (.succ n))) :
+    (hStep : HasFixedness Γ (.app (.app b n) (.natRec C n a b)) (C[(Term.succ n)/])) :
     HasEquality Γ (.natRec C (.succ n) a b) (.app (.app b n) (.natRec C n a b)) := by
   intro Γ₁ σ ρ hρ
   rw [rawInterpret_natRec_succ_projected hC hn ha hb pC.left.ideal
@@ -97,16 +99,16 @@ theorem HasEquality.natRec_succ
 
 theorem RawJudgment.natRec_succ
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hn : Γ.as.terms ⊢ n : .nat)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/]) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
     (pC : RawJudgment (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type)) C C (.sort v))
-    (pn : RawJudgment Γ n n .nat) (pa : RawJudgment Γ a a (C.inst .zero))
+    (pn : RawJudgment Γ n n .nat) (pa : RawJudgment Γ a a (C[Term.zero/]))
     (pb : RawJudgment Γ b b (Term.natRecType C))
     (pRec : RawJudgment Γ (.natRec C (.succ n) a b) (.natRec C (.succ n) a b)
-      (C.inst (.succ n)))
+      (C[(Term.succ n)/]))
     (pStep : RawJudgment Γ (.app (.app b n) (.natRec C n a b))
-      (.app (.app b n) (.natRec C n a b)) (C.inst (.succ n))) :
+      (.app (.app b n) (.natRec C n a b)) (C[(Term.succ n)/])) :
     RawJudgment Γ (.natRec C (.succ n) a b) (.app (.app b n) (.natRec C n a b))
-      (C.inst (.succ n)) :=
+      (C[(Term.succ n)/]) :=
   of_typings pRec pStep (HasEquality.natRec_succ hC hn ha hb pC pn pa pb pStep.fixed)
 
 end DomainSemantics.CoherentShape

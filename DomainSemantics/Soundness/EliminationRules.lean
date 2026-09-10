@@ -15,6 +15,8 @@ import DomainSemantics.Soundness.StructuralRules
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment Presheaf
@@ -23,7 +25,7 @@ variable {Γ Γ₁ Γ₂ : Ctx} {A B f f' a a' e : Term} {u v : Bool}
 
 theorem PiReady.application_value_subst (hready : PiReady Γ A B)
     (hA : Γ.as.terms ⊢ A : .sort u) (hB : A :: Γ.as.terms ⊢ B : .sort v)
-    (θ : Γ₁.as ⟶ Γ.as) (ha : Γ₁.as.terms ⊢ a : A.subst θ.subst)
+    (θ : Γ₁.as ⟶ Γ.as) (ha : Γ₁.as.terms ⊢ a : A[θ.subst])
     (σ : Γ₂ ⟶ Γ₁) (ρ : RawValuation Γ₂)
     (hρ : SourceAdmissible (σ ≫ RawCtx.toCtx.map θ) ρ) {F : Domain Γ₂}
     (hF : piLimit.rawExtend
@@ -106,7 +108,7 @@ theorem HasFixedness.app (hready : PiReady Γ A B)
     (ha : Γ.as.terms ⊢ a : A) (hFI : HasIdeality Γ f) (haI : HasIdeality Γ a)
     (hFF : HasFixedness Γ f (.forallE A B)) (haF : HasFixedness Γ a A)
     (haR : HasRenaming Γ a) (hBS : HasSubstitution (Ctx.extension Γ hA) B) :
-    HasFixedness Γ (.app f a) (B.inst a) := by
+    HasFixedness Γ (.app f a) (B[a/]) := by
   intro Γ₁ σ ρ hρ
   let F := hρ.eval hFI
   let X := hρ.eval haI
@@ -124,9 +126,9 @@ theorem eta_query_eq_of_section (hA : Γ.as.terms ⊢ A : .sort u)
       RawFamily.sourceQuery (Ctx.extension Γ hA) (.bvar 0))
     (t : Raw.ContextSection hA χ name) : name = label := by
   let θ := Ctx.projectionRaw Γ hA
-  have htype : (Ctx.extension Γ hA).as.terms ⊢ A.lift : .sort u := hA.weak' (.skip .refl)
-  have hvar : (Ctx.extension Γ hA).as.terms ⊢ .bvar 0 : A.subst θ.subst := by
-    simpa [θ, Ctx.projectionRaw, ← lift'_subst, Term.lift, Ctx.extension] using
+  have htype : (Ctx.extension Γ hA).as.terms ⊢ A⟨↑⟩ : .sort u := hA.weak
+  have hvar : (Ctx.extension Γ hA).as.terms ⊢ .bvar 0 : A[θ.subst] := by
+    simpa [θ, Ctx.projectionRaw, ← rinstInst'_Term, Ctx.extension] using
       (IsDefEq.bvar Lookup.zero htype)
   let t' : Raw.ContextSection hA (s.hom ≫ RawCtx.toCtx.map θ) name := {
     hom := t.hom
@@ -139,7 +141,7 @@ theorem eta_query_eq_of_section (hA : Γ.as.terms ⊢ A : .sort u)
       (hA.subst θ.srcWF θ.typed) hvar = Tm.rawBinderVar Γ.as.wf hA := by
     unfold Tm.rawBinderVar
     refine Tm.pairOfTyping_eq ⟨u, ?_⟩ ?_
-    · simpa [θ, Ctx.projectionRaw, ← lift'_subst] using htype
+    · simpa [θ, Ctx.projectionRaw, ← rinstInst'_Term] using htype
     · exact hvar
   exact hcanonical.trans ((congrArg (Tm.presheaf.map s.hom.op) hlabel).trans
     s.generic)
@@ -148,7 +150,7 @@ theorem HasRenaming.eta_weaken (hren : HasRenaming Γ e)
     (hA : Γ.as.terms ⊢ A : .sort u) (χ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁)
     (hρ : SourceAdmissible χ ρ) {label : Σ A : Ty Γ₁, Tm Γ₁ A}
     (s : Raw.ContextSection hA χ label) (X : RawValue Γ₁) :
-    (rawInterpret piLimit (Ctx.extension Γ hA) e.lift).app _ s.hom.op (ρ.push X) =
+    (rawInterpret piLimit (Ctx.extension Γ hA) e⟨↑⟩).app _ s.hom.op (ρ.push X) =
       (rawInterpret piLimit Γ e).app _ χ.op ρ := by
   let r := Ctx.VariableMap.projection Γ hA
   have hsource : SourceAdmissible (s.hom ≫ r.hom)
@@ -158,9 +160,9 @@ theorem HasRenaming.eta_weaken (hren : HasRenaming Γ e)
     exact hρ
   have h := hren r s.hom (ρ.push X) hsource
   change (rawInterpret piLimit (Ctx.extension Γ hA)
-      (e.subst (Subst.id.lift_r (.skip .refl)))).app _ s.hom.op (ρ.push X) =
+      (e[(↑ >> Term.bvar)])).app _ s.hom.op (ρ.push X) =
     (rawInterpret piLimit Γ e).app _ (s.hom ≫ Ctx.rawProjection Γ hA).op ρ at h
-  simpa [← lift'_subst, s.over] using h
+  simpa [← rinstInst'_Term, s.over] using h
 
 theorem eta_body_value (hA : Γ.as.terms ⊢ A : .sort u) (hren : HasRenaming Γ e)
     (χ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁) (hρ : SourceAdmissible χ ρ)
@@ -173,9 +175,9 @@ theorem eta_body_value (hA : Γ.as.terms ⊢ A : .sort u) (hren : HasRenaming Γ
       Nonempty (Raw.ContextSection hA (σ₁ ≫ χ) name))
     {label : Σ A : Ty Γ₁, Tm Γ₁ A} (s : Raw.ContextSection hA χ label)
     (X : Domain Γ₁) :
-    (rawInterpret piLimit (Ctx.extension Γ hA) (.app e.lift (.bvar 0))).app _ s.hom.op (ρ.push X.val) = (application F label X).val := by
+    (rawInterpret piLimit (Ctx.extension Γ hA) (.app e⟨↑⟩ (.bvar 0))).app _ s.hom.op (ρ.push X.val) = (application F label X).val := by
   change rawApplication
-    ((rawInterpret piLimit (Ctx.extension Γ hA) e.lift).app _ s.hom.op (ρ.push X.val))
+    ((rawInterpret piLimit (Ctx.extension Γ hA) e⟨↑⟩).app _ s.hom.op (ρ.push X.val))
     (Tm.presheaf.map s.hom.op '' RawFamily.sourceQuery (Ctx.extension Γ hA)
       (.bvar 0)) X.val = _
   rw [hren.eta_weaken hA χ ρ hρ s X.val, ← hF]
@@ -187,7 +189,7 @@ theorem eta_body_value (hA : Γ.as.terms ⊢ A : .sort u) (hren : HasRenaming Γ
     · exact Or.inl hbottom
     · have hmem := hy.mem_application ((principalIdeal_mem x (𝟙 Γ₂) x).mpr
         (by simp))
-      have ⟨t⟩ := hsupport σ₁ name (principalIdeal x) hmem hbottom
+      obtain ⟨t⟩ := hsupport σ₁ name (principalIdeal x) hmem hbottom
       have hname' : name ∈ Tm.presheaf.map (s.pullback σ₁).hom.op ''
           RawFamily.sourceQuery (Ctx.extension Γ hA) (.bvar 0) := by
         simpa [-Sigma.exists, Presheaf.Section.pullback, Function.comp_def] using hname
@@ -204,11 +206,11 @@ theorem eta_sectionValue (hA : Γ.as.terms ⊢ A : .sort u) (hren : HasRenaming 
       Nonempty (Raw.ContextSection hA (σ₁ ≫ χ) name))
     (label : Σ A : Ty Γ₁, Tm Γ₁ A) (X : Domain Γ₁) :
     RawFamily.sectionValue (Ctx.rawDisplay hA)
-      (rawInterpret piLimit (Ctx.extension Γ hA) (.app e.lift (.bvar 0)))
+      (rawInterpret piLimit (Ctx.extension Γ hA) (.app e⟨↑⟩ (.bvar 0)))
       χ ρ label X.val = (application F label X).val := by
   have hbody {Γ₂ : Ctx} (σ₁ : Γ₂ ⟶ Γ₁)
       (s : Raw.ContextSection hA (σ₁ ≫ χ) (Tm.presheaf.map σ₁.op label)) :
-      (rawInterpret piLimit (Ctx.extension Γ hA) (.app e.lift (.bvar 0))).app _ s.hom.op ((ρ.pullback σ₁).push (X.pullback σ₁).val) =
+      (rawInterpret piLimit (Ctx.extension Γ hA) (.app e⟨↑⟩ (.bvar 0))).app _ s.hom.op ((ρ.pullback σ₁).push (X.pullback σ₁).val) =
         (application (F.pullback σ₁) (Tm.presheaf.map σ₁.op label)
           (X.pullback σ₁)).val := by
     apply eta_body_value hA hren (σ₁ ≫ χ) (ρ.pullback σ₁) (hρ.pullback σ₁) (F.pullback σ₁)
@@ -240,7 +242,7 @@ theorem eta_sectionValue (hA : Γ.as.terms ⊢ A : .sort u) (hren : HasRenaming 
   · intro hy
     by_cases hbottom : y ≤ ⊥
     · exact Or.inl hbottom
-    · have ⟨s⟩ := hsupport σ₁ _ (X.pullback σ₁) (happ.mp hy) hbottom
+    · obtain ⟨s⟩ := hsupport σ₁ _ (X.pullback σ₁) (happ.mp hy) hbottom
       refine Or.inr ⟨s, ?_⟩
       rw [← ΩIdeal.val_presheaf_map, hbody σ₁ s]
       exact happ.mp hy
@@ -249,11 +251,11 @@ theorem HasEquality.eta_formation (hready : PiReady Γ A B)
     (hA : Γ.as.terms ⊢ A : .sort u) (hB : A :: Γ.as.terms ⊢ B : .sort v)
     (hEI : HasIdeality Γ e) (hEF : HasFixedness Γ e (.forallE A B))
     (hER : HasRenaming Γ e) :
-    HasEquality Γ (.lam A (.app e.lift (.bvar 0))) e := by
+    HasEquality Γ (.lam A (.app e⟨↑⟩ (.bvar 0))) e := by
   intro Γ₁ σ ρ hρ
   let C := rawInterpret piLimit Γ A
   let N := rawInterpret piLimit (Ctx.extension Γ hA) B
-  let E := rawInterpret piLimit (Ctx.extension Γ hA) (.app e.lift (.bvar 0))
+  let E := rawInterpret piLimit (Ctx.extension Γ hA) (.app e⟨↑⟩ (.bvar 0))
   let T := hρ.eval hready.domain
   let Vraw := RawFamily.normalizedBodyAction piLimit (Ctx.rawDisplay hA) C N σ ρ
   have hV : Vraw.IsFinitary := RawFamily.normalizedBodyAction_isFinitary piLimit (Ctx.rawDisplay hA) C
@@ -312,14 +314,14 @@ theorem HasEquality.eta_formation (hready : PiReady Γ A B)
 theorem HasEquality.eta (hready : PiReady Γ A B)
     (hEI : HasIdeality Γ e) (hEF : HasFixedness Γ e (.forallE A B))
     (hER : HasRenaming Γ e) :
-    HasEquality Γ (.lam A (.app e.lift (.bvar 0))) e :=
+    HasEquality Γ (.lam A (.app e⟨↑⟩ (.bvar 0))) e :=
   have ⟨u, v, hA, hB, hAI, hD⟩ := hready
   HasEquality.eta_formation ⟨u, v, hA, hB, hAI, hD⟩ hA hB hEI hEF hER
 
 theorem RawJudgment.eta (pe : RawJudgment Γ e e (.forallE A B))
-    (pExpansion : RawJudgment Γ (.lam A (.app e.lift (.bvar 0)))
-      (.lam A (.app e.lift (.bvar 0))) (.forallE A B)) :
-    RawJudgment Γ (.lam A (.app e.lift (.bvar 0))) e (.forallE A B) :=
+    (pExpansion : RawJudgment Γ (.lam A (.app e⟨↑⟩ (.bvar 0)))
+      (.lam A (.app e⟨↑⟩ (.bvar 0))) (.forallE A B)) :
+    RawJudgment Γ (.lam A (.app e⟨↑⟩ (.bvar 0))) e (.forallE A B) :=
   RawJudgment.of_typings pExpansion pe (HasEquality.eta pe.type.ready pe.left.ideal pe.fixed
     pe.left.ren)
 
@@ -342,11 +344,11 @@ theorem RawTermProperties.app (hA : Γ.as.terms ⊢ A : .sort u) (hB : A :: Γ.a
 
 theorem RawJudgment.appDF (hA : Γ.as.terms ⊢ A : .sort u) (hB : A :: Γ.as.terms ⊢ B : .sort v)
     (haa' : Γ.as.terms ⊢ a ≡ a' : A)
-    (hResult : Γ.as.terms ⊢ B.inst a ≡ B.inst a' : .sort v)
+    (hResult : Γ.as.terms ⊢ B[a/] ≡ B[a'/] : .sort v)
     (pB : RawJudgment (Ctx.extension Γ hA) B B (.sort v))
     (pf : RawJudgment Γ f f' (.forallE A B)) (pa : RawJudgment Γ a a' A)
-    (pResult : RawJudgment Γ (B.inst a) (B.inst a') (.sort v)) :
-    RawJudgment Γ (.app f a) (.app f' a') (B.inst a) where
+    (pResult : RawJudgment Γ (B[a/]) (B[a'/]) (.sort v)) :
+    RawJudgment Γ (.app f a) (.app f' a') (B[a/]) where
   regular := ⟨v, hResult.hasType.1, pResult.fixed⟩
   type := pResult.left
   left := RawTermProperties.app hA hB haa'.hasType.1 pf.type.ready pf.left pa.left pf.fixed

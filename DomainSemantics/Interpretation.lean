@@ -16,6 +16,8 @@ public import DomainSemantics.Interpretation.Substitution
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 variable (D : CodeAssignment) in
@@ -29,7 +31,7 @@ noncomputable def rawInterpret (Γ : Ctx) : Term → RawFamily Γ
         RawFamily.succ (Tm.pairOfTyping Γ.as.wf .nat hn) (rawInterpret Γ n)
   | .natRec C M a b =>
       ⨆ h : {v : Bool // .nat :: Γ.as.terms ⊢ C : .sort v ∧ Γ.as.terms ⊢ M : .nat ∧
-          Γ.as.terms ⊢ a : C.inst .zero ∧ Γ.as.terms ⊢ b : Term.natRecType C},
+          Γ.as.terms ⊢ a : C[Term.zero/] ∧ Γ.as.terms ⊢ b : Term.natRecType C},
         have ⟨_, hC, hM, ha, hb⟩ := h
         RawFamily.natRec D hC hM ha hb (rawInterpret (Γ.extension .nat) C)
           (rawInterpret Γ M) (rawInterpret Γ a) (rawInterpret Γ b)

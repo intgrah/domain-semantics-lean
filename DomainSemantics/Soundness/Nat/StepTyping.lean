@@ -12,6 +12,8 @@ import DomainSemantics.Soundness.StructuralRules
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment Presheaf
@@ -36,8 +38,8 @@ def substitution (hC : .nat :: Γ.as.terms ⊢ C : .sort v) :
     (IsDefEq.succDF (predecessor_typed hC))
 
 theorem subst_eq_step (hC : .nat :: Γ.as.terms ⊢ C : .sort v) :
-    C.subst (substitution hC).subst = Term.natRecStep C := by
-  rw [Term.natRecStep, Term.inst, subst_lift']
+    C[(substitution hC).subst] = Term.natRecStep C := by
+  rw [Term.natRecStep, renSubst_Term]
   congr 1
   funext i
   cases i <;> rfl

@@ -12,6 +12,8 @@ import DomainSemantics.Soundness.Nat.StepTyping
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment
@@ -20,7 +22,7 @@ variable {Γ Γ₁ : Ctx} {C n b r : Term} {v : Bool}
 
 theorem rawInterpret_natStep_application
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hn : Γ.as.terms ⊢ n : .nat)
-    (hr : Γ.as.terms ⊢ r : C.inst n)
+    (hr : Γ.as.terms ⊢ r : C[n/])
     (pC : RawJudgment (Ctx.extension Γ IsDefEq.nat) C C (.sort v))
     (pn : RawJudgment Γ n n .nat)
     (pb : RawJudgment Γ b b (Term.natRecType C))

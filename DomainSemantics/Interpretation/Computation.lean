@@ -13,6 +13,8 @@ import DomainSemantics.Interpretation.Witnesses
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory
@@ -46,9 +48,9 @@ theorem rawInterpret_beta (D : CodeAssignment)
       ((rawInterpret D Γ a).app _ σ.op ρ) = (rawInterpret D Γ a).app _ σ.op ρ)
     (ihb : (rawInterpret D (Ctx.extension Γ hA) b).app _ (σ ≫ (Raw.ContextSection.ofTerm hA ha).hom).op
         (ρ.push ((rawInterpret D Γ a).app _ σ.op ρ)) =
-      (rawInterpret D Γ (b.subst (Subst.one a))).app _ σ.op ρ) :
+      (rawInterpret D Γ (b[([a/])])).app _ σ.op ρ) :
     (rawInterpret D Γ (.app (.lam A b) a)).app _ σ.op ρ =
-      (rawInterpret D Γ (b.subst (Subst.one a))).app _ σ.op ρ := by
+      (rawInterpret D Γ (b[([a/])])).app _ σ.op ρ := by
   rw [rawInterpret_beta_value D hA ha σ ρ hF hX, iha]
   exact ihb
 
@@ -74,9 +76,9 @@ theorem rawInterpret_tr_K (D : CodeAssignment)
       (rawInterpret D Γ b).app _ σ.op ρ)
     (ihC : (rawInterpret D (Ctx.extension Γ hA) C).app _ (σ ≫ (Raw.ContextSection.ofTerm hA hab.hasType.1).hom).op
         (ρ.push ((rawInterpret D Γ a).app _ σ.op ρ)) =
-      (rawInterpret D Γ (C.subst (Subst.one a))).app _ σ.op ρ)
+      (rawInterpret D Γ (C[([a/])])).app _ σ.op ρ)
     (ihx : D.rawExtend
-        ((rawInterpret D Γ (C.subst (Subst.one a))).app _ σ.op ρ)
+        ((rawInterpret D Γ (C[([a/])])).app _ σ.op ρ)
         ((rawInterpret D Γ x).app _ σ.op ρ) =
       (rawInterpret D Γ x).app _ σ.op ρ) :
     (rawInterpret D Γ (.tr A a b C x h)).app _ σ.op ρ =
@@ -97,7 +99,7 @@ open CategoryTheory CodeAssignment
 variable {Γ Γ₁ : Ctx} {p h h' : Term}
 
 theorem rawInterpret_proofIrrel (σ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁)
-    (ihp : piLimit.rawExtend ((rawInterpret piLimit Γ (.sort false)).app _ σ.op ρ)
+    (ihp : piLimit.rawExtend ((rawInterpret piLimit Γ .prop).app _ σ.op ρ)
       ((rawInterpret piLimit Γ p).app _ σ.op ρ) = (rawInterpret piLimit Γ p).app _ σ.op ρ)
     (ihh : piLimit.rawExtend ((rawInterpret piLimit Γ p).app _ σ.op ρ)
       ((rawInterpret piLimit Γ h).app _ σ.op ρ) = (rawInterpret piLimit Γ h).app _ σ.op ρ)

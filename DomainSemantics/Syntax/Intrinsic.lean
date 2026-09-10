@@ -16,6 +16,8 @@ public import Mathlib.Logic.Equiv.Sum
 
 public noncomputable section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
 open CategoryTheory Opposite
@@ -52,7 +54,7 @@ instance category : Category RawCtx where
   assoc σ₁ σ₂ σ₃ := (Raw.Hom.comp_assoc σ₃ σ₂ σ₁).symm
 
 @[simp] theorem comp_subst {Γ₁ Γ₂ Γ₃ : RawCtx} (σ₁ : Γ₁ ⟶ Γ₂) (σ₂ : Γ₂ ⟶ Γ₃) :
-    (σ₁ ≫ σ₂).subst = σ₂.subst.comp σ₁.subst := by rfl
+    (σ₁ ≫ σ₂).subst = (σ₂.subst >> [σ₁.subst]) := by rfl
 
 @[expose] def homRel : HomRel RawCtx := fun {Γ₁ Γ₂} σ₁ σ₂ =>
   Γ₁.terms ⊢ σ₁.subst ≡ σ₂.subst ⊣ Γ₂.terms
@@ -104,18 +106,18 @@ private def ofRepr (A : Repr Γ) : Element Γ := ⟦A⟧
 
 private def reindex (σ : Raw.Hom Δ.as.terms Γ.as.terms) : Element Γ → Element Δ :=
   fun A => Quotient.map (sa := Repr.setoid Γ) (sb := Repr.setoid Δ)
-    (fun A => ⟨A.term.subst σ.subst,
+    (fun A => ⟨A.term[σ.subst],
     A.wf.subst σ.srcWF σ.typed⟩) (fun _ _ h => h.subst σ.srcWF σ.typed) A
 
 @[simp] private theorem reindex_ofRepr (σ : Raw.Hom Δ.as.terms Γ.as.terms) (A : Repr Γ) :
-    reindex σ (ofRepr A) = ofRepr ⟨A.term.subst σ.subst,
+    reindex σ (ofRepr A) = ofRepr ⟨A.term[σ.subst],
       A.wf.subst σ.srcWF σ.typed⟩ := rfl
 
 @[simp] private theorem reindex_id (A : Element Γ) (hΓ : ⊢ Γ.as.terms) :
     reindex (Raw.Hom.id hΓ) A = A := by
   obtain ⟨A⟩ := A
   apply (ofRepr_eq_iff _ _).mpr
-  change IsDefEqType Γ.as.terms (A.term.subst (Raw.Hom.id hΓ).subst) A.term
+  change IsDefEqType Γ.as.terms (A.term[(Raw.Hom.id hΓ).subst]) A.term
   simpa [Raw.Hom.id] using A.wf
 
 private theorem reindex_comp (A : Element Γ) (σ : Raw.Hom Δ.as.terms Γ.as.terms)
@@ -123,8 +125,8 @@ private theorem reindex_comp (A : Element Γ) (σ : Raw.Hom Δ.as.terms Γ.as.te
     reindex τ (reindex σ A) = reindex (σ.comp τ) A := by
   obtain ⟨A⟩ := A
   apply (ofRepr_eq_iff _ _).mpr
-  change IsDefEqType Θ.as.terms ((A.term.subst σ.subst).subst τ.subst)
-    (A.term.subst (σ.comp τ).subst)
+  change IsDefEqType Θ.as.terms ((A.term[σ.subst])[τ.subst])
+    (A.term[(σ.comp τ).subst])
   simpa [Raw.Hom.comp, subst_subst] using
     A.wf.subst (σ.comp τ).srcWF (σ.comp τ).typed
 
@@ -142,7 +144,7 @@ end Ty.Element
       ⟨Δ.unop.as.wf, σ.subst, τ.subst, (HomRel.compClosure_iff_self RawCtx.homRel σ τ).mp h⟩) σ.unop
   map_id Γ := ConcreteCategory.hom_ext _ _ (Ty.Element.reindex_id · Γ.unop.as.wf)
   map_comp := by
-    intro _ _ _ ⟨σ⟩ ⟨τ⟩
+    rintro _ _ _ ⟨σ⟩ ⟨τ⟩
     obtain ⟨σ, rfl⟩ := RawCtx.toCtx.map_surjective σ
     obtain ⟨τ, rfl⟩ := RawCtx.toCtx.map_surjective τ
     exact ConcreteCategory.hom_ext _ _ fun A => (Ty.Element.reindex_comp A σ τ).symm
@@ -195,7 +197,7 @@ private def reindex (σ : Raw.Hom Δ.as.terms Γ.as.terms) (A : Ty Γ) : Ty Δ :
   yoneda.map (RawCtx.toCtx.map σ) ≫ A
 
 @[simp] private theorem reindex_ofRepr (σ : Raw.Hom Δ.as.terms Γ.as.terms) (A : Repr Γ) :
-    reindex σ (ofRepr A) = ofRepr ⟨A.term.subst σ.subst, A.wf.subst σ.srcWF σ.typed⟩ :=
+    reindex σ (ofRepr A) = ofRepr ⟨A.term[σ.subst], A.wf.subst σ.srcWF σ.typed⟩ :=
   yonedaEquiv_symm_naturality_left _ _ _
 
 @[simp] theorem map_ofTyping (hA : Γ.as.terms ⊢ A : .sort u)
@@ -222,7 +224,7 @@ private theorem Raw.SubstEq.convCtxHead {Γ Δ : List Term} (hΓ : ⊢ Γ) (h : 
 
 private def Raw.Hom.convert {Γ : List Term} (hΓ : ⊢ Γ) (h : Γ ⊢ A ≡ B type) : Raw.Hom (B :: Γ) (A :: Γ) where
   srcWF := .cons hΓ h.choose_spec.hasType.2
-  subst := Subst.id
+  subst := Term.bvar
   typed := by
     obtain ⟨u, h⟩ := h
     simpa using (Raw.SubstEq.id hΓ).lift_at h.hasType.1 h.hasType.2 (by simpa using h)
@@ -245,18 +247,18 @@ private theorem map_extensionIso (hA : Γ.as.terms ⊢ A : .sort u) (B : Ty (Γ.
       reindex (Raw.Hom.convert Γ.as.wf (repr_eq ⟨A, hA.type⟩)) B := rfl
 
 private theorem repr_reindex (A : Ty Γ) (σ : Raw.Hom Δ.as.terms Γ.as.terms) :
-    Δ ⊢ A.repr.term.subst σ.subst ≡ (reindex σ A).repr.term type := by
+    Δ ⊢ A.repr.term[σ.subst] ≡ (reindex σ A).repr.term type := by
   have h := reindex_ofRepr σ A.repr
   rw [ofRepr_repr] at h
   rw [h]
-  exact repr_eq (Γ := Δ) ⟨A.repr.term.subst σ.subst, A.repr.wf.subst σ.srcWF σ.typed⟩
+  exact repr_eq (Γ := Δ) ⟨A.repr.term[σ.subst], A.repr.wf.subst σ.srcWF σ.typed⟩
 
 end Ty
 
 private noncomputable def Ctx.liftRaw (σ : Raw.Hom Δ.as.terms Γ.as.terms) (A : Ty Γ) :
     Raw.Hom (Δ.extend (Ty.reindex σ A)).as.terms (Γ.extend A).as.terms where
   srcWF := (Δ.extend (Ty.reindex σ A)).as.wf
-  subst := σ.subst.lift
+  subst := ⇑σ.subst
   typed := by
     obtain ⟨u, h⟩ := Ty.repr_reindex A σ
     obtain ⟨v, hA⟩ := A.repr.wf
@@ -280,7 +282,7 @@ private theorem reindex_convert_ofRepr {Γ : List Term} (hΓ : ⊢ Γ) (h : Γ �
         ⟨C.term, ⟨C.wf.choose, IsDefEq.convCtxHead hΓ h.choose_spec C.wf.choose_spec⟩⟩ := by
   rw [reindex_ofRepr]
   apply (ofRepr_eq_iff _ _).mpr
-  change B :: Γ ⊢ C.term.subst Subst.id ≡ C.term type
+  change B :: Γ ⊢ C.term[Term.bvar] ≡ C.term type
   simpa [Raw.Hom.convert] using
     C.wf.subst (Raw.Hom.convert hΓ h).srcWF (Raw.Hom.convert hΓ h).typed
 
@@ -348,8 +350,8 @@ private instance setoid (Γ : Ctx) : Setoid (Tm.Repr Γ) where
     }
 
 private def reindex (p : Tm.Repr Γ) (σ : Raw.Hom Γ₁.as.terms Γ.as.terms) : Tm.Repr Γ₁ where
-  ty := p.ty.subst σ.subst
-  val := p.val.subst σ.subst
+  ty := p.ty[σ.subst]
+  val := p.val[σ.subst]
   tyWF := p.tyWF.subst σ.srcWF σ.typed
   valWF := p.valWF.subst σ.srcWF σ.typed
 
@@ -400,7 +402,7 @@ end Tm.Class
       ⟨Δ.unop.as.wf, σ.subst, τ.subst, (HomRel.compClosure_iff_self RawCtx.homRel σ τ).mp h⟩) σ.unop
   map_id Γ := ConcreteCategory.hom_ext _ _ (Tm.Class.reindex_id · Γ.unop.as.wf)
   map_comp := by
-    intro _ _ _ ⟨σ⟩ ⟨τ⟩
+    rintro _ _ _ ⟨σ⟩ ⟨τ⟩
     obtain ⟨σ, rfl⟩ := RawCtx.toCtx.map_surjective σ
     obtain ⟨τ, rfl⟩ := RawCtx.toCtx.map_surjective τ
     exact ConcreteCategory.hom_ext _ _ fun a => (Tm.Class.reindex_comp a σ τ).symm
@@ -408,7 +410,7 @@ end Tm.Class
 def Tm.typing : Tm.universe ⟶ Ty.universe where
   app _ := ↾Tm.type
   naturality := by
-    intro ⟨Γ⟩ ⟨Δ⟩ ⟨σ⟩
+    rintro ⟨Γ⟩ ⟨Δ⟩ ⟨σ⟩
     obtain ⟨σ, rfl⟩ := RawCtx.toCtx.map_surjective σ
     exact ConcreteCategory.hom_ext _ _ (Tm.Class.type_reindex σ)
 
@@ -467,8 +469,8 @@ theorem pairOfTyping_congr {Γ : List Term} (hΓ : ⊢ Γ)
 
 @[expose] def rawBinderVar {Γ : List Term} (hΓ : ⊢ Γ) (hA : Γ ⊢ A : .sort u) : Σ B : Ty (Ctx.extension ⟨Γ, hΓ⟩ hA), Tm (Ctx.extension ⟨Γ, hΓ⟩ hA) B :=
   pairOfTyping (.cons hΓ hA)
-    (hA.weak' (.skip .refl))
-    (.bvar .zero (hA.weak' (.skip .refl)))
+    hA.weak
+    (.bvar .zero hA.weak)
 
 theorem rawBinderVar_congr {Γ : List Term} {A : Term} {u v : Bool}
     (hΓ : ⊢ Γ) (hA : Γ ⊢ A : .sort u) (hA' : Γ ⊢ A : .sort v) :
@@ -480,10 +482,10 @@ theorem inst_rawBinderVar {Γ : List Term} (hΓ : ⊢ Γ) (hA : Γ ⊢ A : .sort
   unfold rawBinderVar
   erw [map_ofTyping]
   apply pairOfTyping_eq ⟨u, ?_⟩ ?_
-  · change Γ ⊢ A.lift.inst e ≡ A : .sort u
+  · change Γ ⊢ A⟨↑⟩[e/] ≡ A : .sort u
     rw [lift_inst]
     exact hA
-  · change Γ ⊢ (Term.bvar 0).inst e ≡ e : A.lift.inst e
+  · change Γ ⊢ (Term.bvar 0)[e/] ≡ e : A⟨↑⟩[e/]
     rw [lift_inst]
     exact he
 
@@ -496,7 +498,7 @@ open Limits
 @[expose] def projectionRaw (Γ₁ : Ctx) (hA : Γ₁.as.terms ⊢ A : .sort u) :
     ((extension Γ₁ hA).as ⟶ Γ₁.as) where
   srcWF := (extension Γ₁ hA).as.wf
-  subst := Subst.id.lift_r (.skip .refl)
+  subst := (↑ >> Term.bvar)
   typed := (Raw.SubstEq.id Γ₁.as.wf).skip
 
 @[expose] def rawProjection (Γ₁ : Ctx) (hA : Γ₁.as.terms ⊢ A : .sort u) :
@@ -506,15 +508,14 @@ open Limits
 @[simp]
 theorem projectionRaw_comp_subst {Γ₁ : Ctx} (Γ₂ : Ctx)
     (hA : Γ₂.as.terms ⊢ A : .sort u) (σ₁ : Γ₁.as ⟶ (extension Γ₂ hA).as) :
-    ((projectionRaw Γ₂ hA).comp σ₁).subst = σ₁.subst.tail := by
+    ((projectionRaw Γ₂ hA).comp σ₁).subst = (↑ >> σ₁.subst) := by
   funext i
-  simp [projectionRaw, Raw.Hom.comp, Subst.comp, Subst.lift_r,
-    Subst.id, Subst.tail, Term.subst]
+  rfl
 
 @[simp]
 theorem cons_projection {Γ₁ : Ctx} (Γ₂ : Ctx) (hA : Γ₂.as.terms ⊢ A : .sort u)
     (σ₁ : Γ₁.as ⟶ Γ₂.as) (e : Term)
-    (he : Γ₁.as.terms ⊢ e : A.subst σ₁.subst) :
+    (he : Γ₁.as.terms ⊢ e : A[σ₁.subst]) :
     RawCtx.toCtx.map (σ₁.cons hA e he) ≫
         rawProjection Γ₂ hA =
       RawCtx.toCtx.map σ₁ := by
@@ -534,28 +535,28 @@ private theorem extension_hom_ext
   obtain ⟨σ₁, rfl⟩ := RawCtx.toCtx.map_surjective σ₁
   obtain ⟨σ₂, rfl⟩ := RawCtx.toCtx.map_surjective σ₂
   apply (RawCtx.toCtx_map_eq_iff _ _).mpr
-  have htail : Γ₁.as.terms ⊢ σ₁.subst.tail ≡ σ₂.subst.tail ⊣ Γ₂.as.terms := by
+  have htail : Γ₁.as.terms ⊢ (↑ >> σ₁.subst) ≡ (↑ >> σ₂.subst) ⊣ Γ₂.as.terms := by
     have htail' := (RawCtx.toCtx_map_eq_iff ((projectionRaw Γ₂ hA).comp σ₁)
       ((projectionRaw Γ₂ hA).comp σ₂)).mp hover
     rwa [projectionRaw_comp_subst, projectionRaw_comp_subst] at htail'
   unfold Tm.rawBinderVar at hgeneric
   erw [Tm.map_ofTyping, Tm.map_ofTyping] at hgeneric
   refine .cons htail hA ?_
-  simpa! [lift_subst, Subst.head] using (Tm.pairOfTyping_eq_iff.mp hgeneric).2
+  simpa! [renSubst_Term] using (Tm.pairOfTyping_eq_iff.mp hgeneric).2
 
 theorem rawExtensionIsRepresented (hA : Γ.as.terms ⊢ A : .sort u) :
     IsPullback (Tm.rawBinderVar Γ.as.wf hA).2.val (yoneda.map (rawProjection Γ hA))
       Tm.typing (Ty.ofTyping Γ.as.wf hA) := by
   apply IsPullback.of_forall_isPullback_app
-  intro ⟨Δ⟩
+  rintro ⟨Δ⟩
   rw [Types.isPullback_iff]
   refine ⟨?_, ?_, ?_⟩
   · apply ConcreteCategory.hom_ext
     intro σ
     obtain ⟨σ, rfl⟩ := RawCtx.toCtx.map_surjective σ
     apply (Ty.Element.ofRepr_eq_iff _ _).mpr
-    change Δ ⊢ A.lift.subst σ.subst ≡ (A.subst ((projectionRaw Γ hA).comp σ).subst) type
-    rw [lift_subst, projectionRaw_comp_subst]
+    change Δ ⊢ A⟨↑⟩[σ.subst] ≡ (A[((projectionRaw Γ hA).comp σ).subst]) type
+    rw [renSubst_Term, projectionRaw_comp_subst]
     simpa only [projectionRaw_comp_subst] using
       hA.type.subst σ.srcWF ((projectionRaw Γ hA).comp σ).typed
   · intro σ τ ⟨hgeneric, hover⟩
@@ -568,12 +569,12 @@ theorem rawExtensionIsRepresented (hA : Γ.as.terms ⊢ A : .sort u) :
   · intro a σ h
     obtain ⟨a⟩ := a
     obtain ⟨σ, rfl⟩ := RawCtx.toCtx.map_surjective σ
-    have hty : Δ ⊢ a.ty ≡ (A.subst σ.subst) type := (Ty.Element.ofRepr_eq_iff _ _).mp h
+    have hty : Δ ⊢ a.ty ≡ (A[σ.subst]) type := (Ty.Element.ofRepr_eq_iff _ _).mp h
     have ha := hty.choose_spec.defeqDF a.valWF
     refine ⟨RawCtx.toCtx.map (σ.cons hA a.val ha), ?_, cons_projection Γ hA σ a.val ha⟩
     apply Quotient.sound
     change _ ∧ _
-    simpa [Tm.Repr.reindex, Tm.Repr.ofTyping, lift_subst_cons, Term.subst, Subst.cons] using And.intro hty.symm ha
+    simpa [Tm.Repr.reindex, Tm.Repr.ofTyping, lift_subst_cons] using And.intro hty.symm ha
 
 
 def projection (Γ : Ctx) (A : Ty Γ) : Γ.extend A ⟶ Γ :=
@@ -623,11 +624,11 @@ abbrev lift (σ : Δ ⟶ Γ) (A : Ty Γ) : Δ.extend (Ty.presheaf.map σ.op A) �
       unfold Tm.rawBinderVar
       erw [Tm.map_ofTyping]
       apply Tm.pairOfTyping_eq
-      · have h := (Ty.repr_reindex A σ).choose_spec.weak'
-          (Γ' := (Ty.repr (Ty.reindex σ A)).term :: Δ.as.terms) (Raw.Lift'.skip .refl)
-        simpa! [liftRaw, lift_subst_lift, Term.lift, Ctx.extend, Ctx.extension] using h.type
-      · exact ((IsDefEq.bvar .zero ((Ty.repr A).wf.choose_spec.weak' (.skip .refl))).subst
-          (liftRaw σ A).srcWF (liftRaw σ A).typed)
+      · have h := (Ty.repr_reindex A σ).choose_spec.weak
+          (B := (Ty.repr (Ty.reindex σ A)).term)
+        simpa! [liftRaw, lift_subst_lift, Ctx.extend, Ctx.extension] using h.type
+      · exact (IsDefEq.bvar .zero (Ty.repr A).wf.choose_spec.weak).subst
+          (liftRaw σ A).srcWF (liftRaw σ A).typed
     exact congrArg (fun a => a.2.val) ht
   · erw [Presheaf.Comprehension.lift_projection]
     symm
@@ -638,8 +639,8 @@ abbrev lift (σ : Δ ⟶ Γ) (A : Ty Γ) : Δ.extend (Ty.presheaf.map σ.op A) �
     congr 1
     apply Raw.Hom.ext
     funext i
-    change (σ.subst i).lift = (σ.subst i).subst (Subst.id.lift_r (.skip .refl))
-    rw [← lift'_subst, subst_id]
+    change (σ.subst i)⟨↑⟩ = (σ.subst i)[↑ >> Term.bvar]
+    exact rinstInst'_Term _ _
 
 abbrev ContextSection (A : Ty Γ) (σ : Δ ⟶ Γ) (label : Σ B : Ty Δ, Tm Δ B) :=
   Presheaf.Section (q := ⟨_, generic A⟩) (comprehension.isPullback A) σ label
@@ -720,7 +721,7 @@ namespace Ty
     (hB : A :: Γ.as.terms ⊢ B : .sort v) (σ : Raw.Hom Δ.as.terms Γ.as.terms) :
     pairPresheaf.map (RawCtx.toCtx.map σ).op (pairOfTyping Γ.as.wf hA hB) =
       pairOfTyping Δ.as.wf (hA.subst σ.srcWF σ.typed)
-        (A := A.subst σ.subst) (B := B.subst σ.subst.lift) (v := v)
+        (A := A[σ.subst]) (B := B[⇑σ.subst]) (v := v)
         (by simpa! using
           hB.subst (.cons σ.srcWF (hA.subst σ.srcWF σ.typed)) (σ.lift hA).typed) := by
   change (⟨_, presheaf.map (Ctx.lift (RawCtx.toCtx.map σ) (pairOfTyping Γ.as.wf hA hB).1).op

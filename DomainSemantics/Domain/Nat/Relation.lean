@@ -12,6 +12,8 @@ public import Mathlib.CategoryTheory.Subfunctor.Image
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory Opposite MonoidalCategory Presheaf
@@ -77,7 +79,7 @@ def ofMorphism {Γ ΓA : Ctx} (D : Display Tm.typing Γ ΓA)
 
 def syntactic {Γ : Ctx} {C a b : Term} {v : Bool}
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/])
     (hb : Γ.as.terms ⊢ b : Term.natRecType C) : NatRecLabelRelation Γ :=
   ofMorphism (Ctx.rawDisplay (.nat : Γ.as.terms ⊢ .nat : .type)) (Tm.natRec hC ha hb)
 
@@ -85,12 +87,12 @@ theorem syntactic_congr
     {Γ : Ctx} {C C' a a' b b' : Term} {v v' w : Bool}
     {hC : .nat :: Γ.as.terms ⊢ C : .sort v}
     {hC' : .nat :: Γ.as.terms ⊢ C' : .sort v'}
-    {ha : Γ.as.terms ⊢ a : C.inst .zero}
-    {ha' : Γ.as.terms ⊢ a' : C'.inst .zero}
+    {ha : Γ.as.terms ⊢ a : C[Term.zero/]}
+    {ha' : Γ.as.terms ⊢ a' : C'[Term.zero/]}
     {hb : Γ.as.terms ⊢ b : Term.natRecType C}
     {hb' : Γ.as.terms ⊢ b' : Term.natRecType C'}
     (hCC' : .nat :: Γ.as.terms ⊢ C ≡ C' : .sort w)
-    (haa' : Γ.as.terms ⊢ a ≡ a' : C.inst .zero)
+    (haa' : Γ.as.terms ⊢ a ≡ a' : C[Term.zero/])
     (hbb' : Γ.as.terms ⊢ b ≡ b' : Term.natRecType C) :
     syntactic hC ha hb = syntactic hC' ha' hb' :=
   congrArg (ofMorphism _) (Tm.natRec.congr hCC' haa' hbb')

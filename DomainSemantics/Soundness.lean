@@ -14,6 +14,8 @@ import DomainSemantics.Soundness.Nat.Rules
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
 open CoherentShape

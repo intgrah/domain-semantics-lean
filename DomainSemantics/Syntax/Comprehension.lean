@@ -9,6 +9,8 @@ public import DomainSemantics.Syntax.Intrinsic
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
 open CategoryTheory
@@ -20,7 +22,7 @@ namespace Ctx
 @[simp]
 theorem map_binderVar_cons {Γ₁ : Ctx} (Γ₂ : Ctx)
     (hA : Γ₂.as.terms ⊢ A : .sort u) (σ₁ : Γ₁.as ⟶ Γ₂.as) (e : Term)
-    (he : Γ₁.as.terms ⊢ e : A.subst σ₁.subst) :
+    (he : Γ₁.as.terms ⊢ e : A[σ₁.subst]) :
     Tm.presheaf.map (RawCtx.toCtx.map (Y := (extension Γ₂ hA).as) (σ₁.cons hA e he)).op
         (Tm.rawBinderVar Γ₂.as.wf hA) =
       Tm.pairOfTyping σ₁.srcWF (hA.subst σ₁.srcWF σ₁.typed) he := by
@@ -36,7 +38,7 @@ open Ctx
 
 def ofTyping {Γ₁ Γ₂ : Ctx}
     (hA : Γ₂.as.terms ⊢ A : .sort u) (σ₁ : Γ₁.as ⟶ Γ₂.as) (e : Term)
-    (he : Γ₁.as.terms ⊢ e : A.subst σ₁.subst) :
+    (he : Γ₁.as.terms ⊢ e : A[σ₁.subst]) :
     Raw.ContextSection hA (RawCtx.toCtx.map σ₁)
       (Tm.pairOfTyping σ₁.srcWF (hA.subst σ₁.srcWF σ₁.typed) he) where
   hom := RawCtx.toCtx.map (σ₁.cons hA e he)

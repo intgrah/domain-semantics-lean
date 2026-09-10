@@ -13,6 +13,8 @@ import DomainSemantics.Interpretation.Witnesses
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment
@@ -26,7 +28,7 @@ theorem bvar (Γ : Ctx) (i : ℕ) : HasSubstitution Γ (.bvar i) :=
 
 theorem sort (Γ : Ctx) (u : Bool) : HasSubstitution Γ (.sort u) := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  simp only [Term.subst, rawInterpret, RawFamily.sort_value]
+  simp only [subst_sort, rawInterpret, RawFamily.sort_value]
 
 theorem refl (Γ : Ctx) (a : Term) : HasSubstitution Γ (.refl a) := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
@@ -51,7 +53,7 @@ theorem binder_body (hA : Γ.as.terms ⊢ A : .sort u) (hAI : HasIdeality Γ A)
         (ρs.pullback σ₁)) J.val = J.val) :
     (rawInterpret piLimit (Ctx.extension Γ hA) b).app _ (s.hom ≫ Ctx.extensionMap hA θ).op ((ρs.pullback σ₁).push J.val) =
       (rawInterpret piLimit (Ctx.extension Γ₁ (hA.subst θ.srcWF θ.typed))
-        (b.subst θ.subst.lift)).app _ s.hom.op
+        (b[⇑θ.subst])).app _ s.hom.op
         ((ρt.pullback σ₁).push J.val) := by
   have hbase : SourceAdmissible ((σ₁ ≫ σ) ≫ RawCtx.toCtx.map θ) (ρs.pullback σ₁) := by
     simpa using hρ.pullback σ₁
@@ -72,7 +74,7 @@ theorem lam (hA : Γ.as.terms ⊢ A : .sort u) (hAI : HasIdeality Γ A)
     (hAs : HasSubstitution Γ A) (hb : HasSubstitution (Ctx.extension Γ hA) b) :
     HasSubstitution Γ (.lam A b) := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  change (rawInterpret piLimit Γ₁ (.lam (A.subst θ.subst) (b.subst θ.subst.lift))).app _ σ.op ρt = _
+  change (rawInterpret piLimit Γ₁ (.lam (A[θ.subst]) (b[⇑θ.subst]))).app _ σ.op ρt = _
   rw [rawInterpret_lam piLimit hA,
     rawInterpret_lam piLimit (hA.subst θ.srcWF θ.typed)]
   symm
@@ -87,10 +89,10 @@ theorem forallE (hA : Γ.as.terms ⊢ A : .sort u) (hB : A :: Γ.as.terms ⊢ B 
     (hBs : HasSubstitution (Ctx.extension Γ hA) B) :
     HasSubstitution Γ (.forallE A B) := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  have hBθ : A.subst θ.subst :: Γ₁.as.terms ⊢ B.subst θ.subst.lift : .sort v := by
-    simpa [Ctx.extension, Term.subst] using
+  have hBθ : A[θ.subst] :: Γ₁.as.terms ⊢ B[⇑θ.subst] : .sort v := by
+    simpa [Ctx.extension] using
       hB.subst (Ctx.extension Γ₁ (hA.subst θ.srcWF θ.typed)).as.wf (θ.lift hA).typed
-  change (rawInterpret piLimit Γ₁ (.forallE (A.subst θ.subst) (B.subst θ.subst.lift))).app _ σ.op ρt = _
+  change (rawInterpret piLimit Γ₁ (.forallE (A[θ.subst]) (B[⇑θ.subst]))).app _ σ.op ρt = _
   rw [rawInterpret_forallE piLimit hA hB,
     rawInterpret_forallE piLimit (hA.subst θ.srcWF θ.typed) hBθ]
   symm
@@ -140,7 +142,7 @@ theorem HasSubstitution.tr (hA : Γ.as.terms ⊢ A : .sort u) (hb : Γ.as.terms 
     (hbs : HasSubstitution Γ b) (hCs : HasSubstitution (Ctx.extension Γ hA) C)
     (hxs : HasSubstitution Γ x) : HasSubstitution Γ (.tr A a b C x h) := by
   intro Γ₁ Γ₂ θ σ ρs ρt hθ hρ
-  have hAθ : Γ₁.as.terms ⊢ A.subst θ.subst : .sort u := hA.subst θ.srcWF θ.typed
+  have hAθ : Γ₁.as.terms ⊢ A[θ.subst] : .sort u := hA.subst θ.srcWF θ.typed
   let Y := (rawInterpret piLimit Γ b).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs
   let s := (Raw.ContextSection.ofTerm hAθ
     (hb.subst θ.srcWF θ.typed)).pullbackId σ
@@ -155,7 +157,7 @@ theorem HasSubstitution.tr (hA : Γ.as.terms ⊢ A : .sort u) (hb : Γ.as.terms 
   have hbody := hCs (Γ₁ := Ctx.extension Γ₁ hAθ)
     (θ.lift hA) s.hom (ρs.push Y) (ρt.push Y) htest hhead
   change (rawInterpret piLimit (Ctx.extension Γ₁ hAθ)
-      (C.subst θ.subst.lift)).app _ s.hom.op (ρt.push Y) =
+      (C[⇑θ.subst])).app _ s.hom.op (ρt.push Y) =
     (rawInterpret piLimit (Ctx.extension Γ hA) C).app _ (s.hom ≫ Ctx.extensionMap hA θ).op (ρs.push Y) at hbody
   have hover : s.hom ≫ Ctx.extensionMap hA θ =
       (σ ≫ RawCtx.toCtx.map θ) ≫ (Raw.ContextSection.ofTerm hA hb).hom := by
@@ -163,8 +165,8 @@ theorem HasSubstitution.tr (hA : Γ.as.terms ⊢ A : .sort u) (hb : Γ.as.terms 
       (hb.subst θ.srcWF θ.typed)).hom) ≫ Ctx.extensionMap hA θ = _
     rw [Category.assoc, ofTerm_subst_hom, ← Category.assoc]
   rw [hover] at hbody
-  change (rawInterpret piLimit Γ₁ (.tr (A.subst θ.subst) (a.subst θ.subst)
-    (b.subst θ.subst) (C.subst θ.subst.lift) (x.subst θ.subst) (h.subst θ.subst))).app _ σ.op ρt = _
+  change (rawInterpret piLimit Γ₁ (.tr (A[θ.subst]) (a[θ.subst])
+    (b[θ.subst]) (C[⇑θ.subst]) (x[θ.subst]) h[θ.subst])).app _ σ.op ρt = _
   rw [rawInterpret_tr piLimit hA hb,
     rawInterpret_tr piLimit hAθ (hb.subst θ.srcWF θ.typed),
     RawFamily.decode_app_hom_coe, RawFamily.decode_app_hom_coe,

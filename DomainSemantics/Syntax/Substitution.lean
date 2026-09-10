@@ -9,10 +9,12 @@ public import DomainSemantics.Syntax.Typing
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
 theorem Raw.SubstEq.comp {Γ₁ Γ₂ Γ₃ : List Term} {σ₁ σ₂ σ₃ σ₄ : Subst} (hΓ₁ : ⊢ Γ₁)
-    (W₁ : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂) : Γ₂ ⊢ σ₃ ≡ σ₄ ⊣ Γ₃ → Γ₁ ⊢ σ₃.comp σ₁ ≡ σ₄.comp σ₂ ⊣ Γ₃
+    (W₁ : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂) : Γ₂ ⊢ σ₃ ≡ σ₄ ⊣ Γ₃ → Γ₁ ⊢ σ₃ >> [σ₁] ≡ σ₄ >> [σ₂] ⊣ Γ₃
   | .nil => .nil
   | .cons W₂ hA hhead => .cons (comp hΓ₁ W₁ W₂) hA (subst_subst ▸ hhead.subst hΓ₁ W₁)
 
@@ -32,85 +34,80 @@ namespace Raw.Hom
 
 def id (hΓ : ⊢ Γ) : Raw.Hom Γ Γ where
   srcWF := hΓ
-  subst := Subst.id
+  subst := Term.bvar
   typed := Raw.SubstEq.id hΓ
 
 def comp (σ : Raw.Hom Γ₁ Γ) (σ₁ : Raw.Hom Γ₂ Γ₁) :
     Raw.Hom Γ₂ Γ where
   srcWF := σ₁.srcWF
-  subst := σ.subst.comp σ₁.subst
+  subst := σ.subst >> [σ₁.subst]
   typed := Raw.SubstEq.comp σ₁.srcWF σ₁.typed σ.typed
 
 def cons (σ : Raw.Hom Γ₁ Γ) (hA : Γ ⊢ A : .sort u)
-    (e : Term) (he : Γ₁ ⊢ e : A.subst σ.subst) : Raw.Hom Γ₁ (A :: Γ) where
+    (e : Term) (he : Γ₁ ⊢ e : A[σ.subst]) : Raw.Hom Γ₁ (A :: Γ) where
   srcWF := σ.srcWF
-  subst := σ.subst.cons e
+  subst := e .: σ.subst
   typed := .cons σ.typed hA he
 
 def one (hΓ : ⊢ Γ) (he : Γ ⊢ e : A) : Raw.Hom Γ (A :: Γ) where
   srcWF := hΓ
-  subst := Subst.one e
+  subst := [e/]
   typed := Raw.SubstEq.one hΓ he
 
-@[simp] theorem id_subst (hΓ : ⊢ Γ) : (id hΓ).subst = Subst.id := rfl
+@[simp] theorem id_subst (hΓ : ⊢ Γ) : (id hΓ).subst = Term.bvar := rfl
 
 @[simp] theorem comp_subst (σ : Raw.Hom Γ₁ Γ) (σ₁ : Raw.Hom Γ₂ Γ₁) :
-    (σ.comp σ₁).subst = σ.subst.comp σ₁.subst := rfl
+    (σ.comp σ₁).subst = σ.subst >> [σ₁.subst] := rfl
 
 @[simp] theorem cons_subst (σ : Raw.Hom Γ₁ Γ) (hA : Γ ⊢ A : .sort u)
-    (e : Term) (he : Γ₁ ⊢ e : A.subst σ.subst) :
-    (σ.cons hA e he).subst = σ.subst.cons e := rfl
+    (e : Term) (he : Γ₁ ⊢ e : A[σ.subst]) :
+    (σ.cons hA e he).subst = e .: σ.subst := rfl
 
 @[simp] theorem one_subst (hΓ : ⊢ Γ) (he : Γ ⊢ e : A) :
-    (one hΓ he).subst = Subst.one e := rfl
+    (one hΓ he).subst = [e/] := rfl
 
 theorem one_comp (hΓ : ⊢ Γ) (hA : Γ ⊢ A : .sort u)
     (he : Γ ⊢ e : A) (σ : Raw.Hom Γ₁ Γ) :
     (one hΓ he).comp σ =
-      σ.cons hA (e.subst σ.subst) (he.subst σ.srcWF σ.typed) := by
-  ext
-  funext i
-  cases i <;> simp! [Subst.comp, Subst.cons, Subst.id]
+      σ.cons hA (e[σ.subst]) (he.subst σ.srcWF σ.typed) := by
+  ext i
+  cases i <;> rfl
 
 theorem comp_assoc (σ : Raw.Hom Γ₁ Γ) (σ₁ : Raw.Hom Γ₂ Γ₁)
     (σ₂ : Raw.Hom Γ₃ Γ₂) :
     (σ.comp σ₁).comp σ₂ = σ.comp (σ₁.comp σ₂) := by
-  ext
-  funext i
-  simp! [Subst.comp, subst_subst]
+  ext i
+  exact subst_subst
 
 theorem id_comp (σ : Raw.Hom Γ₁ Γ) (hΓ : ⊢ Γ) :
     (id hΓ).comp σ = σ := by
-  ext
-  funext i
-  simp [Subst.comp, Subst.id, Term.subst]
+  ext i
+  rfl
 
 theorem comp_id (σ : Raw.Hom Γ₁ Γ) (hΓ₁ : ⊢ Γ₁) :
     σ.comp (id hΓ₁) = σ := by
-  ext
-  funext i
-  simp [Subst.comp]
+  ext i
+  exact subst_id
 
 def lift (σ : Raw.Hom Γ₁ Γ) (hA : Γ ⊢ A : .sort u) :
-    Raw.Hom (A.subst σ.subst :: Γ₁) (A :: Γ) where
+    Raw.Hom (A[σ.subst] :: Γ₁) (A :: Γ) where
   srcWF := .cons σ.srcWF (hA.subst σ.srcWF σ.typed)
-  subst := σ.subst.lift
+  subst := ⇑σ.subst
   typed := σ.typed.lift hA (hA.subst σ.srcWF σ.typed)
 
 @[simp] theorem lift_subst (σ : Raw.Hom Γ₁ Γ) (hA : Γ ⊢ A : .sort u) :
-    (σ.lift hA).subst = σ.subst.lift := rfl
+    (σ.lift hA).subst = ⇑σ.subst := rfl
 
 theorem lift_comp_cons (σ : Raw.Hom Γ₁ Γ) (hA : Γ ⊢ A : .sort u)
     (σ₁ : Raw.Hom Γ₂ Γ₁) (e : Term)
-    (he : Γ₂ ⊢ e : (A.subst σ.subst).subst σ₁.subst) :
+    (he : Γ₂ ⊢ e : (A[σ.subst])[σ₁.subst]) :
     (σ.lift hA).comp
         (σ₁.cons (hA.subst σ.srcWF σ.typed) e he) =
       (σ.comp σ₁).cons hA e (by simpa [subst_subst] using he) := by
-  ext
-  funext i
+  ext i
   cases i with
   | zero => rfl
-  | succ i => simpa [comp, cons, lift, Subst.comp, Subst.cons, Subst.lift, Term.subst] using lift_subst_cons
+  | succ i => exact lift_subst_cons
 
 end Raw.Hom
 
@@ -146,16 +143,16 @@ def id (hΓ : ⊢ Γ) : Raw.HomEq Γ Γ := refl (Raw.Hom.id hΓ)
 
 def comp (W : Raw.HomEq Γ₁ Γ) (V : Raw.HomEq Γ₂ Γ₁) : Raw.HomEq Γ₂ Γ where
   srcWF := V.srcWF
-  left := W.left.comp V.left
-  right := W.right.comp V.right
+  left := W.left >> [V.left]
+  right := W.right >> [V.right]
   typed := Raw.SubstEq.comp V.srcWF V.typed W.typed
 
 def cons (W : Raw.HomEq Γ₁ Γ) (hA : Γ ⊢ A : .sort u)
-    (a b : Term) (hab : Γ₁ ⊢ a ≡ b : A.subst W.left) :
+    (a b : Term) (hab : Γ₁ ⊢ a ≡ b : A[W.left]) :
     Raw.HomEq Γ₁ (A :: Γ) where
   srcWF := W.srcWF
-  left := W.left.cons a
-  right := W.right.cons b
+  left := a .: W.left
+  right := b .: W.right
   typed := .cons W.typed hA hab
 
 def one (hΓ : ⊢ Γ) (hA : Γ ⊢ A : .sort u)

@@ -11,6 +11,8 @@ import DomainSemantics.Interpretation.BinderIdeality
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory CodeAssignment
@@ -19,7 +21,7 @@ def HasSubstitution (Γ : Ctx) (t : Term) : Prop :=
   ∀ {Γ₁ Γ₂ : Ctx} (θ : Γ₁.as ⟶ Γ.as) (σ : Γ₂ ⟶ Γ₁)
     (ρs ρt : RawValuation Γ₂),
     SingleSubstitution θ σ ρs ρt → SourceAdmissible (σ ≫ RawCtx.toCtx.map θ) ρs →
-      (rawInterpret piLimit Γ₁ (t.subst θ.subst)).app _ σ.op ρt =
+      (rawInterpret piLimit Γ₁ (t[θ.subst])).app _ σ.op ρt =
         (rawInterpret piLimit Γ t).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs
 
 theorem HasRenaming.of_substitution {Γ : Ctx} {t : Term} (h : HasSubstitution Γ t) :
@@ -92,7 +94,7 @@ theorem HasSubstitution.instantiate {Γ : Ctx} {A a C : Term} {u : Bool}
     (σ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁) (hρ : SourceAdmissible σ ρ) :
     (rawInterpret piLimit (Ctx.extension Γ hA) C).app _ (σ ≫ (Raw.ContextSection.ofTerm hA ha).hom).op
         (ρ.push ((rawInterpret piLimit Γ a).app _ σ.op ρ)) =
-      (rawInterpret piLimit Γ (C.inst a)).app _ σ.op ρ :=
+      (rawInterpret piLimit Γ (C[a/])).app _ σ.op ρ :=
   have hsource := hρ.push hA ((Raw.ContextSection.ofTerm hA ha).pullbackId σ)
     (hAI σ ρ hρ) (haI σ ρ hρ) (haF σ ρ hρ)
   (hC (Raw.Hom.one Γ.as.wf ha) σ _ ρ

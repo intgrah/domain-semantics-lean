@@ -13,6 +13,8 @@ import DomainSemantics.Soundness
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
 open CategoryTheory CoherentShape CoherentShape.CodeAssignment Presheaf
@@ -63,9 +65,9 @@ judgement CanonCore : List Term → Term → Term → Prop where
   Γ ⊢ a : A
   CanonCore Γ a Y
   Γ ⊢ A ≡ Y type
-  Γ ⊢ B.inst a : .sort v
+  Γ ⊢ B[a/] : .sort v
   ──────────────────── app {Γ : List Term} {f a A B X Y : Term} {v : Bool}
-  CanonCore Γ (.app f a) (B.inst a)
+  CanonCore Γ (.app f a) (B[a/])
 
   Γ ⊢ A : .sort u
   A :: Γ ⊢ b : B
@@ -91,9 +93,9 @@ judgement CanonCore : List Term → Term → Term → Prop where
   ──────────────────── succ {Γ : List Term} {n : Term}
   CanonCore Γ (.succ n) .nat
 
-  Γ ⊢ C.inst M : .sort v
+  Γ ⊢ C[M/] : .sort v
   ──────────────────── natRec {Γ : List Term} {C M a b : Term} {v : Bool}
-  CanonCore Γ (.natRec C M a b) (C.inst M)
+  CanonCore Γ (.natRec C M a b) (C[M/])
 
   ──────────────────── id {Γ : List Term} {A a b : Term}
   CanonCore Γ (.id A a b) .prop
@@ -105,9 +107,9 @@ judgement CanonCore : List Term → Term → Term → Prop where
   ──────────────────── refl {Γ : List Term} {a A X : Term}
   CanonCore Γ (.refl a) (.id A a a)
 
-  Γ ⊢ C.inst b : .sort v
+  Γ ⊢ C[b/] : .sort v
   ──────────────────── tr {Γ : List Term} {A a b C x h : Term} {v : Bool}
-  CanonCore Γ (.tr A a b C x h) (C.inst b)
+  CanonCore Γ (.tr A a b C x h) (C[b/])
 
 def Canon (Γ : List Term) (e V : Term) : Prop :=
   ∃ X, CanonCore Γ e X ∧ Γ ⊢ V ≡ X type
@@ -120,7 +122,7 @@ theorem CanonCore.unique {Γ : List Term} {X X' : Term} :
     ⊢ Γ → CanonCore Γ M X → CanonCore Γ M X' → Γ ⊢ X ≡ X' type := by
   intro hΓ h h'
   induction M generalizing Γ X X' with
-  | bvar i =>
+  | var_Term i =>
     cases h with | bvar hl => cases h' with | bvar hl' =>
     obtain rfl := hl.uniq hl'
     exact hΓ.lookup hl

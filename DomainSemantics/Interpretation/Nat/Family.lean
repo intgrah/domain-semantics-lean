@@ -11,6 +11,8 @@ public import DomainSemantics.Interpretation.Nat.Constructors
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory Presheaf
@@ -45,7 +47,7 @@ end RawActionFamily
 
 noncomputable def RawFamily.natRec (D : CodeAssignment) {C M a b : Term} {v : Bool}
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hM : Γ.as.terms ⊢ M : .nat)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/]) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
     (Csem : RawFamily (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type)))
     (Msem Z B : RawFamily Γ) : RawFamily Γ :=
   (RawActionFamily.natRec D (RawActionFamily.normalizedBody D (Ctx.rawDisplay .nat) nat Csem)
@@ -54,7 +56,7 @@ noncomputable def RawFamily.natRec (D : CodeAssignment) {C M a b : Term} {v : Bo
 
 theorem RawFamily.IsFinitary.natRec (D : CodeAssignment) {C M a b : Term} {v : Bool}
     (hC : .nat :: Γ.as.terms ⊢ C : .sort v) (hM : Γ.as.terms ⊢ M : .nat)
-    (ha : Γ.as.terms ⊢ a : C.inst .zero) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
+    (ha : Γ.as.terms ⊢ a : C[Term.zero/]) (hb : Γ.as.terms ⊢ b : Term.natRecType C)
     {Csem : RawFamily (Ctx.extension Γ (.nat : Γ.as.terms ⊢ .nat : .type))}
     (hCs : Csem.IsFinitary) {Msem Z B : RawFamily Γ}
     (hMs : Msem.IsFinitary) (hZ : Z.IsFinitary) (hB : B.IsFinitary) :

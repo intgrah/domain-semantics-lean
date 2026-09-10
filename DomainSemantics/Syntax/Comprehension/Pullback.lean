@@ -10,6 +10,8 @@ public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics
 
 open CategoryTheory Limits
@@ -33,9 +35,8 @@ theorem extensionMap_projection
   congr 1
   apply Raw.Hom.ext
   funext i
-  change (σ₁.subst i).lift =
-    (σ₁.subst i).subst (Subst.id.lift_r (.skip .refl))
-  rw [← lift'_subst, subst_id]
+  change (σ₁.subst i)⟨↑⟩ = (σ₁.subst i)[↑ >> Term.bvar]
+  exact rinstInst'_Term _ _
 
 @[simp]
 theorem map_extensionMap_binderVar

@@ -12,6 +12,8 @@ import DomainSemantics.Interpretation.Witnesses
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CodeAssignment Presheaf
@@ -68,7 +70,7 @@ theorem rawInterpret_transport_value (hA : Γ.as.terms ⊢ A : .sort u)
     (hCS : HasSubstitution (Ctx.extension Γ hA) C)
     (σ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁) (hρ : SourceAdmissible σ ρ) :
     (rawInterpret piLimit Γ (.tr A a b C x h)).app _ σ.op ρ =
-      piLimit.rawExtend ((rawInterpret piLimit Γ (C.inst b)).app _ σ.op ρ)
+      piLimit.rawExtend ((rawInterpret piLimit Γ (C[b/])).app _ σ.op ρ)
         ((rawInterpret piLimit Γ x).app _ σ.op ρ) := by
   rw [rawInterpret_tr piLimit hA hb, RawFamily.decode_app_hom_coe,
     RawFamily.instantiate_value,
@@ -89,7 +91,7 @@ theorem tr_K (hA : Γ.as.terms ⊢ A : .sort u) (hab : Γ.as.terms ⊢ a ≡ b :
     (hAI : HasIdeality Γ A) (haI : HasIdeality Γ a) (haF : HasFixedness Γ a A)
     (haR : HasRenaming Γ a) (habE : HasEquality Γ a b)
     (hCS : HasSubstitution (Ctx.extension Γ hA) C)
-    (hxF : HasFixedness Γ x (C.inst a)) : HasEquality Γ (.tr A a b C x h) x :=
+    (hxF : HasFixedness Γ x (C[a/])) : HasEquality Γ (.tr A a b C x h) x :=
   fun σ ρ hρ => rawInterpret_tr_K piLimit hA hab σ ρ (habE σ ρ hρ)
     (HasSubstitution.instantiate hA hab.hasType.1 hAI haI haF haR hCS σ ρ hρ)
     (hxF σ ρ hρ)
@@ -98,7 +100,7 @@ theorem beta (hA : Γ.as.terms ⊢ A : .sort u) (ha : Γ.as.terms ⊢ a : A)
     (hAI : HasIdeality Γ A) (hbI : HasIdeality (Ctx.extension Γ hA) b)
     (haI : HasIdeality Γ a) (haF : HasFixedness Γ a A) (haR : HasRenaming Γ a)
     (hbS : HasSubstitution (Ctx.extension Γ hA) b) :
-    HasEquality Γ (.app (.lam A b) a) (b.inst a) :=
+    HasEquality Γ (.app (.lam A b) a) (b[a/]) :=
   fun σ ρ hρ => rawInterpret_beta piLimit hA ha σ ρ
     (HasIdeality.bodyAction hA hAI hbI σ ρ hρ) (haI σ ρ hρ) (haF σ ρ hρ)
     (HasSubstitution.instantiate hA ha hAI haI haF haR hbS σ ρ hρ)

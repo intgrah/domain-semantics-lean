@@ -14,6 +14,8 @@ import DomainSemantics.Syntax.Comprehension.Pullback
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape.RawFamily
 
 open CategoryTheory CodeAssignment
@@ -37,14 +39,14 @@ theorem rawApplication_subst_query_eq (hA : Γ.as.terms ⊢ A : .sort u)
         y ≤ ⊥ ∨
           Nonempty (Raw.ContextSection hA (σ₁ ≫ (σ ≫ RawCtx.toCtx.map θ)) name)) :
     rawApplication F.val
-        (Tm.presheaf.map σ.op '' sourceQuery Γ₁ (a.subst θ.subst)) X.val =
+        (Tm.presheaf.map σ.op '' sourceQuery Γ₁ (a[θ.subst])) X.val =
       rawApplication F.val
         (Tm.presheaf.map (σ ≫ RawCtx.toCtx.map θ).op '' sourceQuery Γ a)
         X.val := by
   have htarget := rawApplication_eq_of_sections (hA.subst θ.srcWF θ.typed)
     (ha.subst θ.srcWF θ.typed) σ F X (fun τ name _ _ hy =>
-      (hsupport τ name hy).imp_right fun ⟨s⟩ =>
-        ⟨Raw.ContextSection.cartesianLift hA θ (by simpa using s)⟩)
+      (hsupport τ name hy).imp_right (Nonempty.map fun s =>
+        Raw.ContextSection.cartesianLift hA θ (by simpa using s)))
   rw [reindex_ofTyping_subst hA ha θ σ] at htarget
   exact htarget.trans (rawApplication_eq_of_sections hA ha
     (σ ≫ RawCtx.toCtx.map θ) F X hsupport).symm
@@ -74,7 +76,7 @@ theorem rawApplication_subst_query_rawPi_fixed (hA : Γ.as.terms ⊢ A : .sort u
       ((pi piLimit (Ctx.rawDisplay hA) label C B).app _ (σ ≫ RawCtx.toCtx.map θ).op ρ) F.val = F.val)
     (X : Domain Γ₂) :
     rawApplication F.val
-        (Tm.presheaf.map σ.op '' sourceQuery Γ₁ (a.subst θ.subst)) X.val =
+        (Tm.presheaf.map σ.op '' sourceQuery Γ₁ (a[θ.subst])) X.val =
       rawApplication F.val
         (Tm.presheaf.map (σ ≫ RawCtx.toCtx.map θ).op '' sourceQuery Γ a)
         X.val :=
@@ -102,11 +104,11 @@ theorem rawInterpret_app_subst (hA : Γ.as.terms ⊢ A : .sort u)
       ((rawInterpret piLimit Γ (.forallE A B)).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs)
       ((rawInterpret piLimit Γ f).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs) =
       (rawInterpret piLimit Γ f).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs)
-    (ihf : (rawInterpret piLimit Γ₁ (f.subst θ.subst)).app _ σ.op ρt =
+    (ihf : (rawInterpret piLimit Γ₁ (f[θ.subst])).app _ σ.op ρt =
       (rawInterpret piLimit Γ f).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs)
-    (iha : (rawInterpret piLimit Γ₁ (a.subst θ.subst)).app _ σ.op ρt =
+    (iha : (rawInterpret piLimit Γ₁ (a[θ.subst])).app _ σ.op ρt =
       (rawInterpret piLimit Γ a).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs) :
-    (rawInterpret piLimit Γ₁ ((Term.app f a).subst θ.subst)).app _ σ.op ρt =
+    (rawInterpret piLimit Γ₁ ((Term.app f a)[θ.subst])).app _ σ.op ρt =
       (rawInterpret piLimit Γ (.app f a)).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs := by
   let F : Domain Γ₂ :=
     ((rawInterpret piLimit Γ f).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs).toIdeal hFideal
@@ -117,9 +119,9 @@ theorem rawInterpret_app_subst (hA : Γ.as.terms ⊢ A : .sort u)
         (rawInterpret piLimit Γ A) (rawInterpret piLimit (Ctx.extension Γ hA) B)).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs) F.val = F.val := by
     rw [rawInterpret_forallE piLimit hA hB] at hFfixed
     exact hFfixed
-  change rawApplication ((rawInterpret piLimit Γ₁ (f.subst θ.subst)).app _ σ.op ρt)
-      (Tm.presheaf.map σ.op '' RawFamily.sourceQuery Γ₁ (a.subst θ.subst))
-      ((rawInterpret piLimit Γ₁ (a.subst θ.subst)).app _ σ.op ρt) =
+  change rawApplication ((rawInterpret piLimit Γ₁ (f[θ.subst])).app _ σ.op ρt)
+      (Tm.presheaf.map σ.op '' RawFamily.sourceQuery Γ₁ (a[θ.subst]))
+      ((rawInterpret piLimit Γ₁ (a[θ.subst])).app _ σ.op ρt) =
     rawApplication ((rawInterpret piLimit Γ f).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs)
       (Tm.presheaf.map (σ ≫ RawCtx.toCtx.map θ).op '' RawFamily.sourceQuery Γ a)
       ((rawInterpret piLimit Γ a).app _ (σ ≫ RawCtx.toCtx.map θ).op ρs)

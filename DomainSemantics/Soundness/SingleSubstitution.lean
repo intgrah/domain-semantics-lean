@@ -11,6 +11,8 @@ import DomainSemantics.Syntax.Comprehension.Pullback
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.CoherentShape
 
 open CategoryTheory
@@ -26,7 +28,7 @@ judgement SingleSubstitution : {Γ Γ₁ Γ₂ : Ctx} → (Γ₁.as ⟶ Γ.as) �
 
   ──────────────────── oneAlong {Γ Γ₁ Γ₂ : Ctx} {A a : Term} {u : Bool}
     (hA : Γ.as.terms ⊢ A : .sort u) (r : Ctx.VariableMap Γ₁ Γ)
-    (ha : Γ₁.as.terms ⊢ a : A.subst r.toRawHom.subst) (hren : HasRenaming Γ₁ a)
+    (ha : Γ₁.as.terms ⊢ a : A[r.toRawHom.subst]) (hren : HasRenaming Γ₁ a)
     (σ : Γ₂ ⟶ Γ₁) (ρ : RawValuation Γ₂) (hTarget : SourceAdmissible σ ρ)
   SingleSubstitution (Γ := Γ.extension hA) (r.toRawHom.cons hA a ha) σ
     (RawValuation.push (fun i ↦ ρ (r.index i))
@@ -68,7 +70,7 @@ theorem variable_reindex (h : SingleSubstitution θ σ ρs ρt)
     (ν : RawValuation Γ₂) :
       σ₁ ≫ r.hom = σ → (∀ i, ν (r.index i) = ρt i) →
       SourceAdmissible (σ ≫ RawCtx.toCtx.map θ) ρs → ∀ i,
-      (rawInterpret CodeAssignment.piLimit Γ₃ ((θ.subst i).subst r.toRawHom.subst)).app _ σ₁.op ν = ρs i := by
+      (rawInterpret CodeAssignment.piLimit Γ₃ ((θ.subst i)[r.toRawHom.subst])).app _ σ₁.op ν = ρs i := by
   intro hσ hν hsource i
   induction h generalizing i with
   | @one Γ Γ₂ A a u hA ha hren σ ρ =>
@@ -80,14 +82,14 @@ theorem variable_reindex (h : SingleSubstitution θ σ ρs ρt)
     have hν' : (fun i ↦ ν (r.index i)) = ρ := funext hν
     cases i with
     | zero =>
-      change (rawInterpret CodeAssignment.piLimit Γ₃ (a.subst r.toRawHom.subst)).app _ σ₁.op ν = (rawInterpret CodeAssignment.piLimit Γ a).app _ σ.op ρ
+      change (rawInterpret CodeAssignment.piLimit Γ₃ (a[r.toRawHom.subst])).app _ σ₁.op ν = (rawInterpret CodeAssignment.piLimit Γ a).app _ σ.op ρ
       simpa [hσ, hν'] using hren r σ₁ ν (by simpa [hσ, hν'] using htail)
     | succ i => exact hν i
   | @oneAlong Γ Γ₁ Γ₂ A a u hA r₀ ha hren σ ρ hTarget =>
       have hν' : (fun i ↦ ν (r.index i)) = ρ := funext hν
       cases i with
       | zero =>
-        change (rawInterpret CodeAssignment.piLimit Γ₃ (a.subst r.toRawHom.subst)).app _ σ₁.op ν = (rawInterpret CodeAssignment.piLimit Γ₁ a).app _ σ.op ρ
+        change (rawInterpret CodeAssignment.piLimit Γ₃ (a[r.toRawHom.subst])).app _ σ₁.op ν = (rawInterpret CodeAssignment.piLimit Γ₁ a).app _ σ.op ρ
         simpa [hσ, hν'] using hren r σ₁ ν (by simpa [hσ, hν'] using hTarget)
       | succ i => exact hν (r₀.index i)
   | ren r₀ σ ρ => exact hν (r₀.index i)
@@ -102,9 +104,9 @@ theorem variable_reindex (h : SingleSubstitution θ σ ρs ρt)
     | zero => exact hν 0
     | succ i =>
       change (rawInterpret CodeAssignment.piLimit Γ₃
-        ((θ.subst i).lift.subst r.toRawHom.subst)).app _ σ₁.op ν = ρs i
-      rw [lift_subst]
-      have hB' : Γ₁.as.terms ⊢ B.subst θ.subst : .sort w := hB.subst θ.srcWF θ.typed
+        ((θ.subst i)⟨↑⟩[r.toRawHom.subst])).app _ σ₁.op ν = ρs i
+      rw [renSubst_Term]
+      have hB' : Γ₁.as.terms ⊢ B[θ.subst] : .sort w := hB.subst θ.srcWF θ.typed
       have hcomp : σ₁ ≫ (r.tail hB').hom = σ ≫ Ctx.rawProjection Γ₁ hB' := by
         rw [Ctx.VariableMap.tail_hom, ← Category.assoc, hσ]
       exact ih (r.tail hB') σ₁ ν hcomp (fun j ↦ hν (j + 1)) hsourceTail i
@@ -114,7 +116,7 @@ theorem variable_eq (h : SingleSubstitution θ σ ρs ρt)
     (rawInterpret CodeAssignment.piLimit Γ₁ (θ.subst i)).app _ σ.op ρt = ρs i := by
   have hvar := h.variable_reindex (Ctx.VariableMap.id Γ₁) σ ρt
     (Category.comp_id σ) (fun _ ↦ rfl) hsource i
-  change (rawInterpret CodeAssignment.piLimit Γ₁ ((θ.subst i).subst Subst.id)).app _ σ.op ρt = ρs i at hvar
+  change (rawInterpret CodeAssignment.piLimit Γ₁ ((θ.subst i)[Term.bvar])).app _ σ.op ρt = ρs i at hvar
   simpa using hvar
 
 end SingleSubstitution

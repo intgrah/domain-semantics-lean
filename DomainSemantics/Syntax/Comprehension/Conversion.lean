@@ -9,6 +9,8 @@ public import DomainSemantics.Syntax.Comprehension
 
 @[expose] public section
 
+open Autosubst Autosubst.Notation
+
 namespace DomainSemantics.Ctx
 
 open CategoryTheory
@@ -18,7 +20,7 @@ variable {Γ₁ Γ₂ : Ctx} {A A' : Term} {u : Bool}
 def contextConversionRaw (h : Γ₁.as.terms ⊢ A ≡ A' : .sort u) :
     ((extension Γ₁ h.hasType.2).as ⟶ (extension Γ₁ h.hasType.1).as) where
   srcWF := (extension Γ₁ h.hasType.2).as.wf
-  subst := Subst.id
+  subst := Term.bvar
   typed := by
     simpa [extension] using
       (Raw.SubstEq.id Γ₁.as.wf).lift_at h.hasType.1 h.hasType.2 (subst_id ▸ h)
@@ -44,14 +46,13 @@ theorem contextConversion_binderVar (h : Γ₁.as.terms ⊢ A ≡ A' : .sort u) 
   unfold Tm.rawBinderVar
   erw [Tm.map_ofTyping]
   refine Tm.pairOfTyping_eq ⟨u, ?_⟩ ?_
-  · change A' :: Γ₁.as.terms ⊢ A.lift.subst Subst.id ≡ A'.lift : .sort u
+  · change A' :: Γ₁.as.terms ⊢ A⟨↑⟩[Term.bvar] ≡ A'⟨↑⟩ : .sort u
     simp
-    exact h.weak' (.skip .refl)
-  · change A' :: Γ₁.as.terms ⊢ (Term.bvar 0).subst Subst.id ≡ .bvar 0 :
-      A.lift.subst Subst.id
+    exact h.weak
+  · change A' :: Γ₁.as.terms ⊢ (Term.bvar 0)[Term.bvar] ≡ .bvar 0 :
+      A⟨↑⟩[Term.bvar]
     simp
-    exact (h.weak' (.skip .refl)).symm.defeqDF
-      (.bvar .zero (h.hasType.2.weak' (.skip .refl)))
+    exact h.weak.symm.defeqDF (.bvar .zero h.hasType.2.weak)
 
 end DomainSemantics.Ctx
 

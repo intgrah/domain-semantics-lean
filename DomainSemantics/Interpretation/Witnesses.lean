@@ -21,7 +21,7 @@ variable (D : CodeAssignment)
 
 theorem rawInterpret_sort_fixed (r : Bool) (σ : Γ₁ ⟶ Γ) (ρ : RawValuation Γ₁) :
     CodeAssignment.piLimit.rawExtend
-      ((rawInterpret CodeAssignment.piLimit Γ (.sort true)).app _ σ.op ρ)
+      ((rawInterpret CodeAssignment.piLimit Γ .type).app _ σ.op ρ)
       ((rawInterpret CodeAssignment.piLimit Γ (.sort r)).app _ σ.op ρ) =
       (rawInterpret CodeAssignment.piLimit Γ (.sort r)).app _ σ.op ρ := by
   change CodeAssignment.piLimit.rawExtend ((RawFamily.sort true).app _ σ.op ρ)
