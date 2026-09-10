@@ -27,7 +27,7 @@ judgement Raw.Ren : (Nat → Nat) → List Term → List Term → Prop where
 
   Raw.Ren ξ Γ Γ'
   ──────────────────── cons
-  Raw.Ren (upRen_Term_Term ξ) (A :: Γ) (A⟨ξ⟩ :: Γ')
+  Raw.Ren (upRen ξ) (A :: Γ) (A⟨ξ⟩ :: Γ')
 
 judgement Lookup : List Term → Nat → Term → Prop where
 
@@ -48,8 +48,8 @@ theorem Lookup.ren (W : Raw.Ren ξ Γ Γ') (h : Lookup Γ i A) : Lookup Γ' (ξ 
     | succ h => simpa [ren_lift] using (ih h).succ
 
 theorem Lookup.uniq : Lookup Γ i A → Lookup Γ i B → A = B
-  | .zero, .zero => rfl
-  | .succ hA, .succ hB => Lookup.uniq hA hB ▸ rfl
+  | zero, zero => rfl
+  | succ hA, succ hB => Lookup.uniq hA hB ▸ rfl
 
 set_option hygiene false in
 scoped notation:65 Γ " ⊢ " e₁:66 " : " A:36 => IsDefEq Γ e₁ e₁ A
@@ -59,9 +59,9 @@ scoped notation:65 Γ " ⊢ " e₁:66 " ≡ " e₂:66 " : " A:36 => IsDefEq Γ e
 judgement IsDefEq : List Term → Term → Term → Term → Prop where
 
   Lookup Γ i A
-  Γ ⊢ A : .sort u
+  Γ ⊢ A : sort u
   ──────────────────── bvar
-  Γ ⊢ .bvar i : A
+  Γ ⊢ bvar i : A
 
   Γ ⊢ e₁ ≡ e₂ : A
   ──────────────────── symm
@@ -72,123 +72,123 @@ judgement IsDefEq : List Term → Term → Term → Term → Prop where
   ──────────────────── trans
   Γ ⊢ e₁ ≡ e₃ : A
 
-  Γ ⊢ A ≡ B : .sort u
-  Γ ⊢ B ≡ C : .sort v
+  Γ ⊢ A ≡ B : sort u
+  Γ ⊢ B ≡ C : sort v
   ──────────────────── trans'
-  Γ ⊢ A ≡ C : .sort u
+  Γ ⊢ A ≡ C : sort u
 
   ──────────────────── sort
-  Γ ⊢ .sort l : .type
+  Γ ⊢ sort l : type
 
-  Γ ⊢ A : .sort u
-  A :: Γ ⊢ B : .sort v
-  Γ ⊢ f ≡ f' : .forallE A B
+  Γ ⊢ A : sort u
+  A :: Γ ⊢ B : sort v
+  Γ ⊢ f ≡ f' : forallE A B
   Γ ⊢ a ≡ a' : A
-  Γ ⊢ B[a/] ≡ B[a'/] : .sort v
+  Γ ⊢ B[a/] ≡ B[a'/] : sort v
   ──────────────────── appDF
-  Γ ⊢ .app f a ≡ .app f' a' : B[a/]
+  Γ ⊢ app f a ≡ app f' a' : B[a/]
 
-  Γ ⊢ A ≡ A' : .sort u
-  A :: Γ ⊢ B : .sort v
+  Γ ⊢ A ≡ A' : sort u
+  A :: Γ ⊢ B : sort v
   A :: Γ ⊢ body ≡ body' : B
   A' :: Γ ⊢ body ≡ body' : B
-  Γ ⊢ .forallE A B : .sort v
+  Γ ⊢ forallE A B : sort v
   ──────────────────── lamDF
-  Γ ⊢ .lam A body ≡ .lam A' body' : .forallE A B
+  Γ ⊢ lam A body ≡ lam A' body' : forallE A B
 
-  Γ ⊢ A ≡ A' : .sort u
-  A :: Γ ⊢ body ≡ body' : .sort v
-  A' :: Γ ⊢ body ≡ body' : .sort v
+  Γ ⊢ A ≡ A' : sort u
+  A :: Γ ⊢ body ≡ body' : sort v
+  A' :: Γ ⊢ body ≡ body' : sort v
   ──────────────────── forallEDF
-  Γ ⊢ .forallE A body ≡ .forallE A' body' : .sort v
+  Γ ⊢ forallE A body ≡ forallE A' body' : sort v
 
-  Γ ⊢ A ≡ B : .sort u
+  Γ ⊢ A ≡ B : sort u
   Γ ⊢ e₁' ≡ e₂' : A
   ──────────────────── defeqDF
   Γ ⊢ e₁' ≡ e₂' : B
 
-  Γ ⊢ A : .sort u
+  Γ ⊢ A : sort u
   A :: Γ ⊢ e : B
   Γ ⊢ e' : A
-  Γ ⊢ .app (.lam A e) e' : B[e'/]
+  Γ ⊢ app (lam A e) e' : B[e'/]
   Γ ⊢ e[e'/] : B[e'/]
   ──────────────────── beta
-  Γ ⊢ .app (.lam A e) e' ≡ e[e'/] : B[e'/]
+  Γ ⊢ app (lam A e) e' ≡ e[e'/] : B[e'/]
 
-  Γ ⊢ e : .forallE A B
-  Γ ⊢ .lam A (.app e⟨↑⟩ (.bvar 0)) : .forallE A B
+  Γ ⊢ e : forallE A B
+  Γ ⊢ lam A (app e⟨↑⟩ (bvar 0)) : forallE A B
   ──────────────────── eta
-  Γ ⊢ .lam A (.app e⟨↑⟩ (.bvar 0)) ≡ e : .forallE A B
+  Γ ⊢ lam A (app e⟨↑⟩ (bvar 0)) ≡ e : forallE A B
 
   ──────────────────── nat
-  Γ ⊢ .nat : .type
+  Γ ⊢ nat : type
 
   ──────────────────── zero
-  Γ ⊢ .zero : .nat
+  Γ ⊢ zero : nat
 
-  Γ ⊢ n ≡ n' : .nat
+  Γ ⊢ n ≡ n' : nat
   ──────────────────── succDF
-  Γ ⊢ .succ n ≡ .succ n' : .nat
+  Γ ⊢ succ n ≡ succ n' : nat
 
-  .nat :: Γ ⊢ C ≡ C' : .sort v
-  Γ ⊢ M ≡ M' : .nat
-  Γ ⊢ a ≡ a' : C[Term.zero/]
-  Γ ⊢ b ≡ b' : .natRecType C
-  Γ ⊢ C[M/] ≡ C'[M'/] : .sort v
+  nat :: Γ ⊢ C ≡ C' : sort v
+  Γ ⊢ M ≡ M' : nat
+  Γ ⊢ a ≡ a' : C[zero/]
+  Γ ⊢ b ≡ b' : natRecType C
+  Γ ⊢ C[M/] ≡ C'[M'/] : sort v
   ──────────────────── natRecDF
-  Γ ⊢ .natRec C M a b ≡ .natRec C' M' a' b' : C[M/]
+  Γ ⊢ natRec C M a b ≡ natRec C' M' a' b' : C[M/]
 
-  .nat :: Γ ⊢ C : .sort v
-  Γ ⊢ a : C[Term.zero/]
-  Γ ⊢ b : Term.natRecType C
-  Γ ⊢ .natRec C .zero a b : C[Term.zero/]
+  nat :: Γ ⊢ C : sort v
+  Γ ⊢ a : C[zero/]
+  Γ ⊢ b : natRecType C
+  Γ ⊢ natRec C zero a b : C[zero/]
   ──────────────────── natRec_zero
-  Γ ⊢ .natRec C .zero a b ≡ a : C[Term.zero/]
+  Γ ⊢ natRec C zero a b ≡ a : C[zero/]
 
-  .nat :: Γ ⊢ C : .sort v
-  Γ ⊢ n : .nat
-  Γ ⊢ a : C[Term.zero/]
-  Γ ⊢ b : Term.natRecType C
-  Γ ⊢ .natRec C (.succ n) a b : C[(Term.succ n)/]
-  Γ ⊢ .app (.app b n) (.natRec C n a b) : C[(Term.succ n)/]
+  nat :: Γ ⊢ C : sort v
+  Γ ⊢ n : nat
+  Γ ⊢ a : C[zero/]
+  Γ ⊢ b : natRecType C
+  Γ ⊢ natRec C (succ n) a b : C[succ n/]
+  Γ ⊢ app (app b n) (natRec C n a b) : C[succ n/]
   ──────────────────── natRec_succ
-  Γ ⊢ .natRec C (.succ n) a b ≡ .app (.app b n) (.natRec C n a b) : C[(Term.succ n)/]
+  Γ ⊢ natRec C (succ n) a b ≡ app (app b n) (natRec C n a b) : C[succ n/]
 
-  Γ ⊢ A ≡ A' : .sort u
+  Γ ⊢ A ≡ A' : sort u
   Γ ⊢ a ≡ a' : A
   Γ ⊢ b ≡ b' : A
   ──────────────────── idDF
-  Γ ⊢ .id A a b ≡ .id A' a' b' : .prop
+  Γ ⊢ id A a b ≡ id A' a' b' : prop
 
-  Γ ⊢ A : .sort u
+  Γ ⊢ A : sort u
   Γ ⊢ a ≡ a' : A
-  Γ ⊢ .id A a a : .prop
+  Γ ⊢ id A a a : prop
   ──────────────────── reflDF
-  Γ ⊢ .refl a ≡ .refl a' : .id A a a
+  Γ ⊢ refl a ≡ refl a' : id A a a
 
-  Γ ⊢ A ≡ A' : .sort u
+  Γ ⊢ A ≡ A' : sort u
   Γ ⊢ a ≡ a' : A
   Γ ⊢ b ≡ b' : A
-  A :: Γ ⊢ C ≡ C' : .sort v
-  A' :: Γ ⊢ C ≡ C' : .sort v
+  A :: Γ ⊢ C ≡ C' : sort v
+  A' :: Γ ⊢ C ≡ C' : sort v
   Γ ⊢ x ≡ x' : C[a/]
-  Γ ⊢ h ≡ h' : .id A a b
-  Γ ⊢ C[b/] ≡ C'[b'/] : .sort v
-  Γ ⊢ .id A a b : .prop
+  Γ ⊢ h ≡ h' : id A a b
+  Γ ⊢ C[b/] ≡ C'[b'/] : sort v
+  Γ ⊢ id A a b : prop
   ──────────────────── trDF
-  Γ ⊢ .tr A a b C x h ≡ .tr A' a' b' C' x' h' : C[b/]
+  Γ ⊢ tr A a b C x h ≡ tr A' a' b' C' x' h' : C[b/]
 
-  Γ ⊢ A : .sort u
+  Γ ⊢ A : sort u
   Γ ⊢ a ≡ b : A
-  A :: Γ ⊢ C : .sort v
+  A :: Γ ⊢ C : sort v
   Γ ⊢ x : C[a/]
-  Γ ⊢ h : .id A a b
-  Γ ⊢ .tr A a b C x h : C[b/]
+  Γ ⊢ h : id A a b
+  Γ ⊢ tr A a b C x h : C[b/]
   Γ ⊢ x : C[b/]
   ──────────────────── tr_K
-  Γ ⊢ .tr A a b C x h ≡ x : C[b/]
+  Γ ⊢ tr A a b C x h ≡ x : C[b/]
 
-  Γ ⊢ p : .prop
+  Γ ⊢ p : prop
   Γ ⊢ hp₁ : p
   Γ ⊢ hp₂ : p
   ──────────────────── proofIrrel
@@ -344,7 +344,7 @@ theorem Raw.SubstEq.lift (W : Γ₁ ⊢ σ₁ ≡ σ₂ ⊣ Γ₂)
   refine .cons W.skip hA ?_
   simpa [substRen_Term] using IsDefEq.bvar Lookup.zero hA'.weak
 
-theorem Raw.SubstEq.id {Γ₁ : List Term} (hΓ₁ : ⊢ Γ₁) : Γ₁ ⊢ Term.bvar ≡ Term.bvar ⊣ Γ₁ := by
+theorem Raw.SubstEq.id {Γ₁ : List Term} (hΓ₁ : ⊢ Γ₁) : Γ₁ ⊢ bvar ≡ bvar ⊣ Γ₁ := by
   induction hΓ₁ with
   | nil => exact .nil
   | @cons _ A _ _ hA ih =>
@@ -532,24 +532,23 @@ theorem IsDefEq.natRecDF₀ (hΓ : ⊢ Γ)
     (hC : .nat::Γ ⊢ C ≡ C' : .sort v)
     (hM : Γ ⊢ M ≡ M' : .nat)
     (ha : Γ ⊢ a ≡ a' : C[Term.zero/])
-    (hb : Γ ⊢ b ≡ b' : Term.natRecType C) :
+    (hb : Γ ⊢ b ≡ b' : natRecType C) :
     Γ ⊢ .natRec C M a b ≡ .natRec C' M' a' b' : C[M/] :=
   .natRecDF hC hM ha hb (.instDF hΓ .nat hC hM)
 
 theorem IsDefEq.natRecStepDF (hΓ : ⊢ Γ) (hC : .nat::Γ ⊢ C ≡ C' : .sort v) :
-    C::.nat::Γ ⊢ Term.natRecStep C ≡ Term.natRecStep C' : .sort v := by
-  have hΓn : ⊢ .nat::Γ := .cons hΓ .nat
-  have hΓnC : ⊢ C::.nat::Γ := .cons hΓn hC.hasType.1
-  have hn : C::.nat::Γ ⊢ .succ (.bvar 1) : .nat :=
-    .succDF (.bvar₀ hΓnC (Lookup.succ Lookup.zero))
-  exact IsDefEq.inst0 hΓnC hn (hC.ren (.cons (Γ' := C::.nat::Γ) (.skip (.skip .refl))))
+    C::.nat::Γ ⊢ natRecStep C ≡ natRecStep C' : .sort v :=
+  have hΓnC : ⊢ C::.nat::Γ := .cons (.cons hΓ .nat) hC.hasType.1
+  IsDefEq.inst0 hΓnC
+    (.succDF (.bvar₀ hΓnC (Lookup.succ Lookup.zero)))
+    (hC.ren (.cons (.skip (.skip .refl))))
 
 theorem IsDefEq.natRecStep_ty (hΓ : ⊢ Γ) (hC : .nat::Γ ⊢ C : .sort v) :
-    C::.nat::Γ ⊢ Term.natRecStep C : .sort v := .natRecStepDF hΓ hC
+    C::.nat::Γ ⊢ natRecStep C : .sort v :=
+  .natRecStepDF hΓ hC
 
 theorem IsDefEq.natRecTypeDF (hΓ : ⊢ Γ) (hC : .nat::Γ ⊢ C ≡ C' : .sort v) :
-    Γ ⊢ Term.natRecType C ≡ Term.natRecType C' : .sort v :=
-  have hΓn : ⊢ .nat::Γ := .cons hΓ .nat
-  .forallEDF₀ hΓ .nat (.forallEDF₀ hΓn hC (.natRecStepDF hΓ hC))
+    Γ ⊢ natRecType C ≡ natRecType C' : .sort v :=
+  .forallEDF₀ hΓ .nat (.forallEDF₀ (.cons hΓ .nat) hC (.natRecStepDF hΓ hC))
 
 end DomainSemantics
