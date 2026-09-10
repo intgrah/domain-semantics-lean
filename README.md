@@ -22,4 +22,4 @@ This builds on [Carneiro, Coquand, Frabetti Mathieu, Lennon-Bertrand, Melliès a
 [Terms (Extrinsic.lean)](DomainSemantics/Syntax/Extrinsic.lean)
 [Typing (Typing.lean)](DomainSemantics/Syntax/Typing.lean)
 
-Martin-Löf Type Theory with type-in-type, prop, Π with β-η, proof-irrelevant identity type with transport and K.
+Martin-Löf Type Theory with type-in-type, prop, Π with β-η, proof-irrelevant identity type with transport and K, natural numbers with dependent eliminator.
