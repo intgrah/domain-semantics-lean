@@ -3,6 +3,8 @@
 Definitional inversion for a non-normalising type theory with definitional K via internal Scott domains in presheaves over syntax.
 It follows from soundness alone!
 
+This builds on [Carneiro, Coquand, Frabetti Mathieu, Lennon-Bertrand, Melliès and Weirich (2026)](https://arxiv.org/pdf/2607.13662) including [digama0/domain-semantics-lean](https://github.com/digama0/domain-semantics-lean).
+
 ## Main results
 
 [`Inversion.lean`](DomainSemantics/Inversion.lean)
